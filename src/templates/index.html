@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>FireGuard</h1>
+    <p>Du skal bli trygg</p>
+    <ul>
+        {% for mt in mountain %}
+        <li><a href="/mountain/{{ mt }}">{{ mt }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
