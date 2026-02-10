@@ -2,15 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>FireGuard</title>
+    <script>
+        function submitLogin(event) {
+            event.preventDefault(); // prevent page reload
+
+            const formData = new FormData(document.getElementById('loginForm'));
+
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messageDiv = document.getElementById('message');
+                messageDiv.innerText = data.message;
+                messageDiv.style.color = data.success ? 'green' : 'red';
+
+                if(data.success) {
+                    window.location.href= '/mainpage'
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
 </head>
 <body>
+    <img src="{{ url_for('static', filename='FireGuardLogo.jpg') }}" alt="FireGuardLogo" style="width: 200px;">
     <h1>FireGuard</h1>
-    <p>Du skal bli trygg</p>
-    <ul>
-        {% for mt in mountain %}
-        <li><a href="/mountain/{{ mt }}">{{ mt }}</a></li>
-        {% endfor %}
-    </ul>
+        <p>Du skal bli trygg</p>
+        <form id="loginForm" onsubmit="submitLogin(event)">
+            <input type="text" id="username" name="username" placeholder="Epost / brukernavn"><br>
+            <input type="password" id="password" name="password" placeholder="Passord"><br>
+
+            <button type="submit">Login</button>
+        </form>
+        <div id="message" style="margin-top: 10px; font-weight: bold;"></div>
 </body>
 </html>
