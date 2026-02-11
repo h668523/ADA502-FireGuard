@@ -3,8 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <title>FireGuard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #panel {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: azure;
+        }
+
+        #map {
+            width: 50%;
+            height: 100%
+        }
+    </style>
 </head>
 <body>
-    <p>swag</p>
+
+    <div id="panel">
+        <p>Logged in as: {{username}}</p>
+        <h2>Search / Info panel</h2>
+        <p>This is where your search and place info will go</p>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        var map = L.map('map').setView([65.418873, 15.668229], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OpenStreetMap contributors'}).addTo(map);
+
+        //L.marker([60.390258, 5.328565]).addTo(map).bindPopup('Bergen');
+
+
+
+        fetch("{{ url_for('static', filename='norge.json') }}").then(res => res.json()).then(norge => {
+            const world = [
+                [-90, -180],
+                [-90,  180],
+                [ 90,  180],
+                [ 90, -180]
+            ];
+
+            function flipCoords(coords) {
+                return coords.map(polygon =>
+                    polygon.map(ring =>
+                        ring.map(coord => [coord[1], coord[0]])
+                    )
+                );
+            }
+
+            const geometry = norge.features[0].geometry;
+
+            let holes= [];
+
+            if(geometry.type == "MultiPolygon") {
+                holes = flipCoords(geometry.coordinates).map(polygon => polygon[0])
+            } else if(geometry.type == "Polygon") {
+                holes = [flipCoords(geometry.coordinates)[0][0]]
+            }
+
+            L.polygon([
+                world,
+                ...holes
+            ], {
+                fillColor: 'grey',
+                fillOpacity: 0.5,
+                stroke: false
+            }).addTo(map);
+        })
+    </script>
 </body>
 </html>

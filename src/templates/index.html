@@ -26,17 +26,50 @@
             .catch(error => console.error('Error:', error));
         }
     </script>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #panel {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: azure;
+        }
+
+        #map {
+            width: 50%;
+            height: 100%
+        }
+    </style>
 </head>
 <body>
-    <img src="{{ url_for('static', filename='FireGuardLogo.jpg') }}" alt="FireGuardLogo" style="width: 200px;">
-    <h1>FireGuard</h1>
-        <p>Du skal bli trygg</p>
-        <form id="loginForm" onsubmit="submitLogin(event)">
-            <input type="text" id="username" name="username" placeholder="Epost / brukernavn"><br>
-            <input type="password" id="password" name="password" placeholder="Passord"><br>
+    <div id="panel">
+        <img src="{{ url_for('static', filename='FireGuardLogo.jpg') }}" alt="FireGuardLogo" style="width: 200px;"><br>
 
-            <button type="submit">Login</button>
+        <form id="loginForm" onsubmit="submitLogin(event)">
+            <input type="text" id="username" name="username" placeholder="Epost / brukernavn" style="margin-top: 5px"><br>
+            <input type="password" id="password" name="password" placeholder="Passord" style="margin-top: 5px"><br>
+
+            <button type="submit" style="margin-top: 5px">Login</button>
         </form>
         <div id="message" style="margin-top: 10px; font-weight: bold;"></div>
+
+        <button type="button" onclick="continueWithoutLogin()" style="margin-top: 10px;">Continue without login</button>
+
+        <script>
+            function continueWithoutLogin() {
+                fetch('/set-guest', {method: 'POST'}).then(() => { window.location.href = '/mainpage';})
+            };
+        </script>
+
+    </div>
+    <div id="map">
+
+    </div>
 </body>
 </html>
