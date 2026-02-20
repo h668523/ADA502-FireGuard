@@ -1,3 +1,4 @@
 Velkommen til vårt FireGuard prosjekt!
 
-For å kjøre på ubuntu-serveren python -m ada502_fireguard.main
+For å kjøre på ubuntu-serveren så skriv:
+Først "source .venv/bin/activate", så "python -m ada502_fireguard.main"
