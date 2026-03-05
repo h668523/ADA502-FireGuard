@@ -30,7 +30,9 @@
     <div id="panel">
         <p>Logged in as: {{username}}</p>
         <h2>Search</h2>
-        <p>In Bergen the flashover time is blah blah blah</p>
+        <div id="weatherBox">
+            <p>Click the map to see weather</p>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -42,45 +44,51 @@
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OpenStreetMap contributors'}).addTo(map);
 
-        //L.marker([60.390258, 5.328565]).addTo(map).bindPopup('Bergen');
+        var norwayBounds = L.latLngBounds(
+            [53.3, 2.5],   // Southwest
+            [72.0, 33.0]   // Northeast
+        );
 
+        map.setMaxBounds(norwayBounds);
 
+        var currentMarker = null;
 
-        fetch("{{ url_for('static', filename='norge.json') }}").then(res => res.json()).then(norge => {
-            const world = [
-                [-90, -180],
-                [-90,  180],
-                [ 90,  180],
-                [ 90, -180]
-            ];
+    function getWeather(lat, lon) {
+        fetch(`/weather?lat=${lat}&lon=${lon}`)
+            .then(response => response.json())
+            .then(data => {
 
-            function flipCoords(coords) {
-                return coords.map(polygon =>
-                    polygon.map(ring =>
-                        ring.map(coord => [coord[1], coord[0]])
-                    )
-                );
-            }
+                if (data.error) {
+                    document.getElementById("weatherBox").innerHTML =
+                        "<p style='color:red;'>Error loading weather</p>";
+                    return;
+                }
 
-            const geometry = norge.features[0].geometry;
+                document.getElementById("weatherBox").innerHTML = `
+                    <h3>Weather Data for ${data.place},${data.county}</h3>
+                    <p><strong>Temperature:</strong> ${data.temperature} °C</p>
+                    <p><strong>Wind Speed:</strong> ${data.wind_speed} m/s</p>
+                    <p><strong>Humidity:</strong> ${data.humidity} %</p>
+                `;
+            })
+            .catch(error => {
+                console.error("Weather fetch error:", error);
+            });
+    }
 
-            let holes= [];
+    map.on("click", function (e) {
 
-            if(geometry.type == "MultiPolygon") {
-                holes = flipCoords(geometry.coordinates).map(polygon => polygon[0])
-            } else if(geometry.type == "Polygon") {
-                holes = [flipCoords(geometry.coordinates)[0][0]]
-            }
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
 
-            L.polygon([
-                world,
-                ...holes
-            ], {
-                fillColor: 'grey',
-                fillOpacity: 0.5,
-                stroke: false
-            }).addTo(map);
-        })
+        if (currentMarker !== null) {
+            map.removeLayer(currentMarker);
+        }
+
+        currentMarker = L.marker([lat, lon]).addTo(map);
+
+        getWeather(lat, lon);
+    });
     </script>
 </body>
 </html>
