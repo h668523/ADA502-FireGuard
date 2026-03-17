@@ -1,6 +1,12 @@
 Velkommen til vårt FireGuard prosjekt!
 
 
+
+--
+Dette under er litt utdatert no, helst ikkje gjer dette lengre, for det bør skjes automatisk. Eg trur også at python programmet kjøres på ein litt anna måte no, som ikkje opptar ubuntu terminalen 17.03.2026 -Martin
+Github actions tar automatisk å oppdaterer nrec og restarter python på nrec maskina når det skjer noko med main branch.
+--
+
 For å kjøre på ubuntu-serveren skriv:
 1. " source ADA502-FireGuard/.fire/bin/activate ", her går man inn i et virituelt python environment
 2. " python ADA502-FireGuard/src/ada502_fireguard/main.py ", her kjører man programmet
