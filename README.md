@@ -18,4 +18,4 @@ Har du oppdatert i GitHub og skal oppdatere NREC-en, gjør følgende:
 4. " git pull origin main ", her oppdaterer du prosjektet med de nye filene fra github
 5. " cd ", nå går du ut av prosjektet
 Nå har du oppdatert prosjektet og kan kjøre programmet som vist tidligere.
-1
+
