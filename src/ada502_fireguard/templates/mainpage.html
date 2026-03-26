@@ -72,7 +72,8 @@
                     <p><strong>Wind Speed:</strong> ${data.wind_speed} m/s</p>
                     <p><strong>Humidity:</strong> ${data.humidity} %</p>
                     <p><strong>Timestamp:</strong> ${data.timestamp} </p>
-                    <p><strong>Time to flashover:</strong> ${data.ttf} min</p>
+                    <p><strong>Time to flashover:</strong> ${data.ttf_current} min</p>
+                    <p><strong>Future time to flashover:</strong> <span style="color: darkred;">(make this pretty later)</span> <br> ${data.ttf_future}</p>
                 `;
                 })
                 .catch(error => {
