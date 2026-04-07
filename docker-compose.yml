@@ -16,5 +16,8 @@ services:
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HOSTNAME: 158.39.75.130
+      - KC_HTTP_ENABLED: "true"
+      - KC_PROXY: edge
     ports:
       - "8080:8080"
