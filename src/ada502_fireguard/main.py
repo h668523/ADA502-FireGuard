@@ -2,9 +2,10 @@ import requests
 from flask import Flask, render_template, jsonify, request, url_for, session, redirect
 import folium
 import frcm  # Dette er fire risk-kalkulatoren fra Lars
-import datetime  # Trennger denne for firersikkalkulator
 import pandas as pd
 import io
+# Denne brukes for å håndtere tidskodene i værdataen fra MET
+from dateutil import parser
 import csv
 from keycloak import KeycloakOpenID
 from flask_sqlalchemy import SQLAlchemy
@@ -77,56 +78,85 @@ def get_weather():
     if response.status_code != 200:
         return jsonify({"error": "Failed to fetch weather"}), 500
 
-    data = response.json()
+    all_data = response.json()
 
-    current = data["properties"]["timeseries"][0]["data"]["instant"]["details"]
+    # -----Dette er her for testing---
+    #path = "C:\\Users\\jonas\\Desktop\\test\\bergen_2026_01_09.json"
+    #with open(path, "r", encoding="utf-8") as f:
+    #    all_data = json.load(f)
+    # --------------------------------------------
 
     geo_url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
     geo_res = requests.get(geo_url, headers=headers).json()
     addr = geo_res.get("address", {})
 
-    place = addr.get("suburb") or addr.get("village") or addr.get("town") or addr.get("city") or "Unknown place"
-    county = addr.get("municipality") or addr.get("city") or "Unknown municipality"
+    place = addr.get("suburb") or addr.get("village") or addr.get(
+        "town") or addr.get("city") or "Unknown place"
+    county = addr.get("municipality") or addr.get(
+        "city") or "Unknown municipality"
 
-    # Fire risk-kalkulering:
-    # Den trenger minst to tidspunkt av en eller annen grunnn. Bruker bare now-verdien videre
-    now = datetime.datetime.now()
-    wd = frcm.WeatherData(data=[
-        frcm.WeatherDataPoint(
-            temperature=float(current["air_temperature"]),
-            humidity=float(current["relative_humidity"]),
-            wind_speed=float(current["wind_speed"]),
-            timestamp=now - datetime.timedelta(hours=1)  # Previous point
-        ),
-        frcm.WeatherDataPoint(
-            temperature=float(current["air_temperature"]),
-            humidity=float(current["relative_humidity"]),
-            wind_speed=float(current["wind_speed"]),
-            timestamp=now  # current point
+
+    # --------------Fire risk-kalkulering--------------------
+    # For å returnere værdata for i dag
+    current = all_data["properties"]["timeseries"][0]["data"]["instant"]["details"]
+
+    timeseries = all_data["properties"]["timeseries"]
+
+    weather_points = []
+
+    for entry in timeseries:
+        # Noe GPT-kode som gjør json om til en filtype som kalkulatoren kan bruke senere
+        timestamp = parser.isoparse(entry["time"])
+
+        details = entry["data"]["instant"]["details"]
+
+        temp = float(details["air_temperature"])
+        hum = float(details["relative_humidity"])
+        wind = float(details["wind_speed"])
+
+        weather_points.append(
+            frcm.WeatherDataPoint(
+                temperature=temp,
+                humidity=hum,
+                wind_speed=wind,
+                timestamp=timestamp
+            )
         )
-    ])
-    # Har testet opp mot resultatene man får når man kjører "uv run python src/frcm/__main__.py ./bergen_2026_01_09.csv"
-    # (skrev manuelt inn de to første linjene fra CSV-filen), og det ser ut til å stemme.
 
-    # Time to flashover, i forskjellige formater:
-    ttf_customClass = frcm.compute(wd)
-    ttf_text = str(ttf_customClass)
-    ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"])
+    #Funksjon fra FRC for å få dataen på en form den kan kalkulere med
+    weatherData = frcm.WeatherData(data=weather_points)
 
-    # Verdiene som skal returneres og vises:
-    last_timestamp_pd = ttf_csv["timestamp"].iloc[-1]
-    last_timestamp_string = last_timestamp_pd.strftime("%d. %B, %H:%M").lower()
-    last_ttf_float = float(ttf_csv["ttf"].iloc[-1])
+    # Time to flashover, i forskjellige formater som kan benyttes:
+    ttf_customClass = frcm.compute(weatherData)     #Kalkulerer ttf og får ut en rar datatype
+    ttf_text = str(ttf_customClass)                 #Gjør resultatetne om til en rein string
+    ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"]) #Gjør stringen om til en csv-fil for senere bruk
 
+    # Blanding av ny og gammel kode. Tid og fire riske for nå-tid lages for seg selv, mens fremtidig tid kommer senere
+    first_timestamp_pd = ttf_csv["timestamp"].iloc[1]
+    first_timestamp_string = first_timestamp_pd.strftime("%d. %B, %H:%M").lower() 
+
+    first_ttf_float = float(ttf_csv["ttf"].iloc[1])
+
+    # Lager tekst som viser fremtidige tider
+    ttf_future = ""
+    for i in range(2, min(11, len(ttf_csv))):
+        timestamp = ttf_csv["timestamp"].iloc[i]
+        ttf_value = float(ttf_csv["ttf"].iloc[i])
+        ttf_future += f"{timestamp.strftime('%d. %B, %H:%M').lower()} {ttf_value:.2f} min<br>"
+    # ------------------------------------------------------
+
+    # Setter alt inn i en JSON som html kan bruke
     return jsonify({
         "place": place,
         "county": county,
         "temperature": current["air_temperature"],
         "wind_speed": current["wind_speed"],
         "humidity": current["relative_humidity"],
-        "timestamp": last_timestamp_string,
-        "ttf": f"{last_ttf_float:.2f}"
+        "timestamp": first_timestamp_string,
+        "ttf_current": f"{first_ttf_float:.2f}",
+        "ttf_future": ttf_future
     })
+
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -191,7 +221,7 @@ def logout():
     return redirect("/")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=8000, debug=False)
 
 
 # Database greier
