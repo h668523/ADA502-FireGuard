@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  fireguard:
+    build: .
+    ports:
+      - "5000:5000"
+    depends_on:
+      - keycloak
+    environment:
+      - FLASK_SECRET_KEY=supersecret
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1.1
+    command: start-dev --hostname localhost
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    ports:
+      - "8080:8080"

@@ -3,3 +3,5 @@ folium
 requests
 pandas
 python-keycloak
+psycopg2-binary
+flask-sqlalchemy
