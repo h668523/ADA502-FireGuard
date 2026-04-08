@@ -12,12 +12,12 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:21.1.1
-    command: start-dev --hostname localhost
+    command: start-dev
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
-      - KC_HOSTNAME: 158.39.75.130
-      - KC_HTTP_ENABLED: true
-      - KC_PROXY: edge
+      - KC_HOSTNAME=158.39.75.130
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY=edge
     ports:
       - "8080:8080"
