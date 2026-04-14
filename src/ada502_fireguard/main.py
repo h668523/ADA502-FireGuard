@@ -97,7 +97,7 @@ def get_weather():
 
 
     # --------------Fire risk-kalkulering--------------------
-    # For å returnere værdata for i dag
+    #For å returnere værdata for i dag
     current = all_data["properties"]["timeseries"][0]["data"]["instant"]["details"]
 
     timeseries = all_data["properties"]["timeseries"]
