@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, jsonify, request, url_for, session
+from flask import Flask, render_template, jsonify, request, url_for, session, redirect
 import folium
 import frcm  # Dette er fire risk-kalkulatoren fra Lars
 import pandas as pd
@@ -7,17 +7,57 @@ import io
 # Denne brukes for å håndtere tidskodene i værdataen fra MET
 from dateutil import parser
 import csv
-import json  # Kun for testning, kan fjernes
+from keycloak import KeycloakOpenID
+from flask_sqlalchemy import SQLAlchemy
+
+keycloak_openid = KeycloakOpenID(
+    server_url="http://158.39.75.130:8080/", #158.39.75.130
+    client_id="fireguard-app",
+    realm_name="fireguard",
+    client_secret_key=None
+)
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-# Variables
-VALID_USERNAME = 'test'
-VALID_PASSWORD = 'test'
-
 m = folium.Map(location=[62.972077, 10.395563], zoom_start=6)
 
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:fireguard@fireguard1.cv6ewuwg64ny.eu-central-1.rds.amazonaws.com:5432/postgres"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+
+class Fylke(db.Model):
+    __tablename__ = "fylke"
+    name = db.Column(db.String(20), primary_key=True)
+
+    kommuner = db.relationship("Kommune", backref="fylke")
+
+class Kommune(db.Model):
+    __tablename__ = "kommune"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
+    fylke_name = db.Column(db.String(20), db.ForeignKey("fylke.name"))
+
+    tettsteder = db.relationship("Tettsted", backref="kommune")
+
+class Tettsted(db.Model):
+    __tablename__ = "tettsted"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
+    kommune_id =db.Column(db.Integer, db.ForeignKey("kommune.id"))
+
+class Bruker(db.Model):
+    __tablename__ = "bruker"
+    keycloak_id = db.Column(db.String(100), primary_key=True)
+    brukernavn = db.Column(db.String(50))
+    email = db.Column(db.String(75))
+
+class Favoritter(db.Model):
+    __tablename__ = "favoritter"
+    id = db.Column(db.Integer, primary_key=True)
+    bruker_id = db.Column(db.String(100), db.ForeignKey("bruker.keycloak_id"))
+    tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
 
 @app.route("/weather")
 def get_weather():
@@ -30,7 +70,7 @@ def get_weather():
     url = f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={lat}&lon={lon}"
 
     headers = {
-        "User-Agent": "FireGuard/1.0 668523@stud.hvl.no"
+        "User-Agent": "FireGuard/1.0 668523@stud.hvl.no" #I fremtiden, ta imot emailen til en bruker og bruk den istedenfor
     }
 
     response = requests.get(url, headers=headers)
@@ -57,7 +97,7 @@ def get_weather():
 
 
     # --------------Fire risk-kalkulering--------------------
-    # For å returnere værdata for i dag
+    #For å returnere værdata for i dag
     current = all_data["properties"]["timeseries"][0]["data"]["instant"]["details"]
 
     timeseries = all_data["properties"]["timeseries"]
@@ -121,31 +161,81 @@ def get_weather():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        if username == VALID_USERNAME and password == VALID_PASSWORD:
-            session['username'] = username
-            return jsonify({"success": True, "message": "Login successful"})
-        else:
-            return jsonify({"success": False, "message": "Username and password do not match"})
-
     return render_template('index.html')
 
+@app.route("/login")
+def login():
+    auth_url = keycloak_openid.auth_url(
+        redirect_uri="http://158.39.75.130:8000/callback", #158.39.75.130
+        scope="openid"
+    )
+    return redirect(auth_url)
+
+
+@app.route("/callback")
+def callback():
+    code = request.args.get("code")
+
+    if not code:
+        return "Missing authorization code", 400
+
+    token = keycloak_openid.token(
+        grant_type="authorization_code",
+        code=code,
+        redirect_uri="http://158.39.75.130:8000/callback" #158.39.75.130
+    )
+    print("TOKEN RESPONSE: ", token)
+
+    userinfo = keycloak_openid.userinfo(token["access_token"])
+    session["user"] = userinfo
+    user_id = userinfo["sub"]
+    bruker = db.session.get(Bruker, user_id)
+    if not bruker:
+        bruker = Bruker(
+            keycloak_id=user_id,
+            brukernavn=userinfo["preferred_username"],
+            email=userinfo["email"]
+        )
+        db.session.add(bruker)
+        db.session.commit()
+
+    return redirect("/mainpage")
 
 @app.route('/set-guest', methods=['POST'])
 def set_guest():
-    session['username'] = "Guest"
+    session['user'] = {"preferred_username": "Guest"}
     return '', 204
 
 
 @app.route('/mainpage')
 def mainpage():
-    username = session.get('username', 'Guest')
-    return render_template('mainpage.html', username=username)
+    user = session.get("user")
+    if not user:
+        return redirect("/login")
+    
+    return render_template('mainpage.html', username=user["preferred_username"])
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=False)
+
+
+# Database greier
+@app.route("/fylker")
+def get_fylker():
+    fylker = Fylke.query.all()
+    return [f.name for f in fylker]
+
+@app.route("/add-tettsted")
+def add_tettsted():
+    new_tettsted = Tettsted(
+        name="Salhus",
+        kommune_id = 1,
+    )
+    db.session.add(new_tettsted)
+    db.session.commit()
+    return "Added"
