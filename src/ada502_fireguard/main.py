@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+print(app.url_map)
 app.secret_key = "supersecretkey"
 
 m = folium.Map(location=[62.972077, 10.395563], zoom_start=6)
