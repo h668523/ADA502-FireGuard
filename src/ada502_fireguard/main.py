@@ -429,7 +429,7 @@ def add_favorite(tettsted_name, kommune_name, fylke_name):
 #    return "", 204
 
 print("registered routes")
-for r in app.url_iter_rules():
+for r in app.url_map.iter_rules():
     print(r)
 
 if __name__ == '__main__':
