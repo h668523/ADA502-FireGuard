@@ -360,7 +360,7 @@ def mainpage():
     if user_id:
         favorites = db.session.query(Tettsted).join(
             Favoritter, Favoritter.tettsted_id == Tettsted.id
-        ).filter_by(
+        ).filter(
             Favoritter.bruker_id == user_id
         ).all()
     else:
