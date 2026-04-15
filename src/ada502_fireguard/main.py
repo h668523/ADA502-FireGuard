@@ -388,6 +388,7 @@ def trigger_daily_task():
 # Database greier
 @app.route("/favorite/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>", methods=["POST"])
 def add_favorite(tettsted_name, kommune_name, fylke_name):
+    print(fylke_name,tettsted_name,kommune_name)
     userinfo = session["user"]
     user_id = userinfo.get("sub")
     if not user_id:
