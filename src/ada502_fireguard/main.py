@@ -26,13 +26,15 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-print("main.py is executed")
+
 app = Flask(__name__)
-print("before routes")
-print(app.url_map)
-print("after routes")   
 
 app.secret_key = "supersecretkey"
+
+app.config.update(
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=False
+)
 
 m = folium.Map(location=[62.972077, 10.395563], zoom_start=6)
 
@@ -393,10 +395,12 @@ def trigger_daily_task():
 @app.route("/favorite/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>", methods=["POST"])
 def add_favorite(tettsted_name, kommune_name, fylke_name):
     print(fylke_name,tettsted_name,kommune_name)
-    userinfo = session["user"]
+    userinfo = session.get("user")
+    if not userinfo:
+        return "Missing user", 401
     user_id = userinfo.get("sub")
     if not user_id:
-        return "Guests can't favorite places", 696
+        return "Invalid session, no sub", 401
     fylket = Fylke.query.filter_by(name=fylke_name).first()
     if not fylket:
         return "ingen fylke med navn " + fylke_name, 404
@@ -427,10 +431,6 @@ def add_favorite(tettsted_name, kommune_name, fylke_name):
 #        db.session.delete(fav)
 #        db.session.commit()
 #    return "", 204
-
-print("registered routes")
-for r in app.url_map.iter_rules():
-    print(r)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=False)
