@@ -381,17 +381,14 @@ def trigger_daily_task():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=False)
-
-
 # Database greier
 @app.route("/favorite/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>", methods=["POST"])
 def add_favorite(tettsted_name, kommune_name, fylke_name):
-    user_id = session.get("keycloak_id")
+    userinfo = session["user"]
+    user_id = userinfo["sub"]
     fylket = Fylke.query.filter_by(name=fylke_name).first()
     if not fylket:
-        return "ingen fylke med navn " + kommune_name, 404
+        return "ingen fylke med navn " + fylke_name, 404
     kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
     if not kommunen:
         return "ingen kommune med navn "+ kommune_name, 404
@@ -408,7 +405,7 @@ def add_favorite(tettsted_name, kommune_name, fylke_name):
     db.session.commit()
     return "", 204
 
-@app.route("/favorite/<int::tettsted>", methods=["DELETE"])
+@app.route("/favorite/<string:tettsted>", methods=["DELETE"])
 def remove_favorite(tettsted_id):
     user_id = session.get("keycloak_id")
     fav = Favoritter.query.filter_by(
@@ -419,3 +416,7 @@ def remove_favorite(tettsted_id):
         db.session.delete(fav)
         db.session.commit()
     return "", 204
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000, debug=False)
+
