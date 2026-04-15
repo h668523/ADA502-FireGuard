@@ -11,7 +11,7 @@ from keycloak import KeycloakOpenID
 from flask_sqlalchemy import SQLAlchemy
 
 keycloak_openid = KeycloakOpenID(
-    server_url="http://keycloak:8080/", #158.39.75.130
+    server_url="http://158.39.75.130:8080/", #158.39.75.130
     client_id="fireguard-app",
     realm_name="fireguard",
     client_secret_key=None
@@ -385,6 +385,10 @@ def trigger_daily_task():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000, debug=False)
+
+
 
 # Database greier
 @app.route("/favorite/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>", methods=["POST"])
@@ -421,7 +425,4 @@ def remove_favorite(tettsted_id):
         db.session.delete(fav)
         db.session.commit()
     return "", 204
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=False)
 
