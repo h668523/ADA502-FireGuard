@@ -26,9 +26,12 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-
+print("main.py is executed")
 app = Flask(__name__)
+print("before routes")
 print(app.url_map)
+print("after routes")   
+
 app.secret_key = "supersecretkey"
 
 m = folium.Map(location=[62.972077, 10.395563], zoom_start=6)
