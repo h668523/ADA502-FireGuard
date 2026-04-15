@@ -412,17 +412,17 @@ def add_favorite(tettsted_name, kommune_name, fylke_name):
     db.session.commit()
     return "", 204
 
-@app.route("/favorite/<string:tettsted>", methods=["DELETE"])
-def remove_favorite(tettsted_id):
-    user_id = session.get("keycloak_id")
-    fav = Favoritter.query.filter_by(
-        bruker_id = user_id,
-        tettsted_id = tettsted_id
-    ).first()
-    if fav:
-        db.session.delete(fav)
-        db.session.commit()
-    return "", 204
+#@app.route("/favorite/<string:tettsted>", methods=["DELETE"])
+#def remove_favorite(tettsted_id):
+#    user_id = session.get("keycloak_id")
+#    fav = Favoritter.query.filter_by(
+#        bruker_id = user_id,
+#        tettsted_id = tettsted_id
+#    ).first()
+#    if fav:
+#        db.session.delete(fav)
+#        db.session.commit()
+#    return "", 204
 
 
 if __name__ == '__main__':
