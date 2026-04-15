@@ -24,7 +24,7 @@ services:
       - KC_PROXY=edge
       - KC_HOSTNAME=158.39.75.130
     ports:
-      - "8080:8080"
+      - "5000:8080"
  
 volumes:
   keycloak_data:
