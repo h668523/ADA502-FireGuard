@@ -68,6 +68,8 @@ class Favoritter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bruker_id = db.Column(db.String(100), db.ForeignKey("bruker.keycloak_id"))
     tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
+
+    
 # ---------------Sende Emails--------------------
 # Example users used to create emails, will be changed later
 users_with_favorites = [
