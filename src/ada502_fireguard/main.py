@@ -356,7 +356,7 @@ def mainpage():
     }
     for s in steder]
     
-    user_id = user["sub"]
+    user_id = user.get("sub")
     if user_id:
         favorites = db.session.query(Tettsted).join(
             Favoritter, Favoritter.tettsted_id == Tettsted.id
