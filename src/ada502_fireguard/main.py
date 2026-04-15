@@ -389,7 +389,9 @@ def trigger_daily_task():
 @app.route("/favorite/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>", methods=["POST"])
 def add_favorite(tettsted_name, kommune_name, fylke_name):
     userinfo = session["user"]
-    user_id = userinfo["sub"]
+    user_id = userinfo.get("sub")
+    if not user_id:
+        return "Guests can't favorite places", 404
     fylket = Fylke.query.filter_by(name=fylke_name).first()
     if not fylket:
         return "ingen fylke med navn " + fylke_name, 404
