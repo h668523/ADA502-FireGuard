@@ -11,7 +11,7 @@ from keycloak import KeycloakOpenID
 from flask_sqlalchemy import SQLAlchemy
 
 keycloak_openid = KeycloakOpenID(
-    server_url="http://158.39.75.130:8080/", #158.39.75.130
+    server_url="http://keycloak:8080/", #158.39.75.130
     client_id="fireguard-app",
     realm_name="fireguard",
     client_secret_key=None
@@ -391,7 +391,7 @@ def add_favorite(tettsted_name, kommune_name, fylke_name):
     userinfo = session["user"]
     user_id = userinfo.get("sub")
     if not user_id:
-        return "Guests can't favorite places", 404
+        return "Guests can't favorite places", 696
     fylket = Fylke.query.filter_by(name=fylke_name).first()
     if not fylket:
         return "ingen fylke med navn " + fylke_name, 404
