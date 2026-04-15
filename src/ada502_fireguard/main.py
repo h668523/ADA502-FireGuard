@@ -6,8 +6,6 @@ import pandas as pd
 import io
 # Denne brukes for å håndtere tidskodene i værdataen fra MET
 from dateutil import parser
-import csv
-import json  # Kun for testning, kan fjernes
 from apscheduler.schedulers.background import BackgroundScheduler  # For å trigge emails
 import atexit
 from datetime import datetime
@@ -128,8 +126,8 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(
     func=send_daily_notification,
     trigger="cron",
-    hour=18,
-    minute=48,
+    hour=00,
+    minute=5,
     id="daily_notification",
     name="Daily notification at midnight",
     replace_existing=True
