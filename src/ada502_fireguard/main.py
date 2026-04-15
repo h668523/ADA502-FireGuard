@@ -56,6 +56,8 @@ class Tettsted(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40))
     kommune_id =db.Column(db.Integer, db.ForeignKey("kommune.id"))
+    latitude = db.Column(db.Double)
+    longitude = db.Column(db.Double)
 
 class Bruker(db.Model):
     __tablename__ = "bruker"
@@ -348,8 +350,8 @@ def mainpage():
     steder = Tettsted.query.all()
     places = [{
         "name": s.name,
-        "lat": s.lat,
-        "long": s.long
+        "lat": s.latitude,
+        "long": s.longitude
     }
     for s in steder]
 
