@@ -1,6 +1,3 @@
-from flask_sqlalchemy import SQLAlchemy
-from keycloak import KeycloakOpenID
-import csv
 import requests
 from flask import Flask, render_template, jsonify, request, url_for, session, redirect
 import folium
@@ -9,6 +6,16 @@ import pandas as pd
 import io
 # Denne brukes for å håndtere tidskodene i værdataen fra MET
 from dateutil import parser
+import csv
+from keycloak import KeycloakOpenID
+from flask_sqlalchemy import SQLAlchemy
+
+keycloak_openid = KeycloakOpenID(
+    server_url="http://158.39.75.130:8080/", #158.39.75.130
+    client_id="fireguard-app",
+    realm_name="fireguard",
+    client_secret_key=None
+)
 from apscheduler.schedulers.background import BackgroundScheduler  # For å trigge emails
 import atexit
 from datetime import datetime
@@ -20,18 +27,47 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-keycloak_openid = KeycloakOpenID(
-    server_url="http://158.39.75.130:8080/",  # 158.39.75.130
-    client_id="fireguard-app",
-    realm_name="fireguard",
-    client_secret_key=None
-)
-
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
 m = folium.Map(location=[62.972077, 10.395563], zoom_start=6)
 
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:fireguard@fireguard1.cv6ewuwg64ny.eu-central-1.rds.amazonaws.com:5432/postgres"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+
+class Fylke(db.Model):
+    __tablename__ = "fylke"
+    name = db.Column(db.String(20), primary_key=True)
+
+    kommuner = db.relationship("Kommune", backref="fylke")
+
+class Kommune(db.Model):
+    __tablename__ = "kommune"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
+    fylke_name = db.Column(db.String(20), db.ForeignKey("fylke.name"))
+
+    tettsteder = db.relationship("Tettsted", backref="kommune")
+
+class Tettsted(db.Model):
+    __tablename__ = "tettsted"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
+    kommune_id =db.Column(db.Integer, db.ForeignKey("kommune.id"))
+
+class Bruker(db.Model):
+    __tablename__ = "bruker"
+    keycloak_id = db.Column(db.String(100), primary_key=True)
+    brukernavn = db.Column(db.String(50))
+    email = db.Column(db.String(75))
+
+class Favoritter(db.Model):
+    __tablename__ = "favoritter"
+    id = db.Column(db.Integer, primary_key=True)
+    bruker_id = db.Column(db.String(100), db.ForeignKey("bruker.keycloak_id"))
+    tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
 # ---------------Sende Emails--------------------
 # Example users used to create emails, will be changed later
 users_with_favorites = [
@@ -150,8 +186,7 @@ def calculate_weather_data(lat, lon):
     url = f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={lat}&lon={lon}"
 
     headers = {
-        # I fremtiden, ta imot emailen til en bruker og bruk den istedenfor
-        "User-Agent": "FireGuard/1.0 668523@stud.hvl.no"
+        "User-Agent": "FireGuard/1.0 668523@stud.hvl.no" #I fremtiden, ta imot emailen til en bruker og bruk den istedenfor
     }
 
     response = requests.get(url, headers=headers)
@@ -170,18 +205,15 @@ def calculate_weather_data(lat, lon):
     county = addr.get("municipality") or addr.get(
         "city") or "Unknown municipality"
 
+    # For å returnere værdata for i dag
+    current = all_data["properties"]["timeseries"][0]["data"]["instant"]["details"]
 
+    # --------------Fire risk-kalkulering--------------------
+    timeseries = all_data["properties"]["timeseries"]
 
-# --------------Fire risk-kalkulering--------------------
-# For å returnere værdata for i dag
-current = all_data["properties"]["timeseries"][0]["data"]["instant"]["details"]
+    weather_points = []
 
- # --------------Fire risk-kalkulering--------------------
- timeseries = all_data["properties"]["timeseries"]
-
-  weather_points = []
-
-   for entry in timeseries:
+    for entry in timeseries:
         timestamp = parser.isoparse(entry["time"])
         details = entry["data"]["instant"]["details"]
 
@@ -259,11 +291,10 @@ def get_weather():
 def index():
     return render_template('index.html')
 
-
 @app.route("/login")
 def login():
     auth_url = keycloak_openid.auth_url(
-        redirect_uri="http://158.39.75.130:8000/callback",  # 158.39.75.130
+        redirect_uri="http://158.39.75.130:8000/callback", #158.39.75.130
         scope="openid"
     )
     return redirect(auth_url)
@@ -279,7 +310,7 @@ def callback():
     token = keycloak_openid.token(
         grant_type="authorization_code",
         code=code,
-        redirect_uri="http://158.39.75.130:8000/callback"  # 158.39.75.130
+        redirect_uri="http://158.39.75.130:8000/callback" #158.39.75.130
     )
     print("TOKEN RESPONSE: ", token)
 
@@ -298,7 +329,6 @@ def callback():
 
     return redirect("/mainpage")
 
-
 @app.route('/set-guest', methods=['POST'])
 def set_guest():
     session['user'] = {"preferred_username": "Guest"}
@@ -310,28 +340,13 @@ def mainpage():
     user = session.get("user")
     if not user:
         return redirect("/login")
-
+    
     return render_template('mainpage.html', username=user["preferred_username"])
-
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
-
-
-@app.route('/trigger-daily-task', methods=['POST'])
-def trigger_daily_task():
-    """
-    Manual endpoint to trigger the daily notification task.
-    Useful for testing without waiting until midnight.
-    """
-    try:
-        send_daily_notification()
-        return jsonify({"success": True, "message": "Daily task executed successfully"}), 200
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
-
 
 @app.route('/trigger-daily-task', methods=['POST'])
 def trigger_daily_task():
@@ -356,12 +371,11 @@ def get_fylker():
     fylker = Fylke.query.all()
     return [f.name for f in fylker]
 
-
 @app.route("/add-tettsted")
 def add_tettsted():
     new_tettsted = Tettsted(
         name="Salhus",
-        kommune_id=1,
+        kommune_id = 1,
     )
     db.session.add(new_tettsted)
     db.session.commit()
