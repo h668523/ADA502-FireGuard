@@ -428,8 +428,10 @@ def add_favorite(tettsted_name, kommune_name, fylke_name):
 #        db.session.commit()
 #    return "", 204
 
-print(app.url_map)
-print("url_map at the bottom of the main.py")
+print("registered routes")
+for r in app.url_iter_rules():
+    print(r)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=False)
 
