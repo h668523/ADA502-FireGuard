@@ -21,6 +21,6 @@ services:
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
-      - KC_HOSTNAME=158.39.75.130
+      - KC_HOSTNAME=158.39.75.130:5000
     ports:
       - "5000:8080"
