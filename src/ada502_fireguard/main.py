@@ -208,7 +208,7 @@ def calculate_weather_data(lat, lon):
         "town") or addr.get("city") or "Unknown place"
     municipality = addr.get("municipality") or addr.get(
         "city") or "Unknown municipality"
-
+    county = addr.get("county")
 
     # --------------Fire risk-kalkulering--------------------
     #For å returnere værdata for i dag
@@ -284,6 +284,7 @@ def get_weather():
 
     return jsonify({
         "place": data["place"],
+        "municipality": data["municipality"],
         "county": data["county"],
         "temperature": data["temperature"],
         "wind_speed": data["wind_speed"],
