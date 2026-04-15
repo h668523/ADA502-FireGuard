@@ -92,9 +92,9 @@ def get_weather():
 
     place = addr.get("suburb") or addr.get("village") or addr.get(
         "town") or addr.get("city") or "Unknown place"
-    county = addr.get("municipality") or addr.get(
+    municipality = addr.get("municipality") or addr.get(
         "city") or "Unknown municipality"
-
+    county = addr.get("county")
 
     # --------------Fire risk-kalkulering--------------------
     #For å returnere værdata for i dag
@@ -148,6 +148,7 @@ def get_weather():
     # Setter alt inn i en JSON som html kan bruke
     return jsonify({
         "place": place,
+        "municipality": municipality,
         "county": county,
         "temperature": current["air_temperature"],
         "wind_speed": current["wind_speed"],
@@ -212,8 +213,21 @@ def mainpage():
     user = session.get("user")
     if not user:
         return redirect("/login")
-    
-    return render_template('mainpage.html', username=user["preferred_username"])
+    steder = Tettsted.query.all()
+    places = [{
+        "name": s.name,
+        "lat": s.lat,
+        "long": s.long
+    }
+    for s in steder]
+
+    favorites = db.session.query(Tettsted).join(
+        Favoritter, Favoritter.tettsted_id == Tettsted.id
+    ).filter(
+        Favoritter.bruker_id == session["keycloak_id"]
+    ).all()
+
+    return render_template('mainpage.html', places=places, favorites=favorites, username=user["preferred_username"])
 
 @app.route("/logout")
 def logout():
@@ -225,17 +239,30 @@ if __name__ == '__main__':
 
 
 # Database greier
-@app.route("/fylker")
-def get_fylker():
-    fylker = Fylke.query.all()
-    return [f.name for f in fylker]
+@app.route("/favorite/<string::tettsted_name>/<string::kommune_name>/<string::fylke_name>", methods=["POST"])
+def add_favorite(tettsted_name, kommune_name, fylke_name):
+    user_id = session.get("keycloak_id")
+    fylke = Fylke.query.select(Fylke).where(Fylke.name == fylke_name).first()
+    kommune_id = Kommune.query.select(Kommune).where(Kommune.name == kommune_name, Kommune.fylke_name == fylke)
+    tettsted = Tettsted.query.select(Tettsted).where(Tettsted.name == tettsted_name, Tettsted.kommune_id == kommune_id.id)
 
-@app.route("/add-tettsted")
-def add_tettsted():
-    new_tettsted = Tettsted(
-        name="Salhus",
-        kommune_id = 1,
+    fav = Favoritter (
+        bruker_id = user_id,
+        tettsted_id = tettsted.id
     )
-    db.session.add(new_tettsted)
+
+    db.session.add(fav)
     db.session.commit()
-    return "Added"
+    return "", 204
+
+@app.route("/favorite/<int::tettsted>", methods=["DELETE"])
+def remove_favorite(tettsted_id):
+    user_id = session.get("keycloak_id")
+    fav = Favoritter.query.filter_by(
+        bruker_id = user_id,
+        tettsted_id = tettsted_id
+    ).first()
+    if fav:
+        db.session.delete(fav)
+        db.session.commit()
+    return "", 204

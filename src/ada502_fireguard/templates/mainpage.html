@@ -31,13 +31,69 @@
 
     <div id="panel">
         <div style="top:20px; right:20px;">
+            Logged in as: {{username}}
             <button onclick="window.location.href='/logout'">Log out</button>
         </div>
-        <p>Logged in as: {{username}}</p>
-        <h2>Search</h2>
+        Favorites:
+        <select id="favorites" onchange="loadFavorite()">
+            <option value="" disabled selected hidden></option>
+            <option data-lat="{{place.lat}}"
+                    data-long="{{place.long}}">
+                {{place.name}}
+            </option>
+        </select>
+
+        <h2>Search
+            <input type="text" id="search" placeholder="" onkeyup="searchPlaces()"><ul id="searchResults"></ul></input>
+            <button onclick="addFavorite()">Add to favorites</button>
+        </h2>
         <div id="weatherBox">
             <p>Click the map to see weather</p>
         </div>
+        <script>
+            let places = {{places || tojson}};
+
+            function addFavorite() {
+                if(!currentTettsted) {
+                    alert("Select a place first!")
+                    return
+                }
+                fetch(`/favorite/${currentTettsted}/${currentKommune}/${currentFylke}`, {method:"POST"})
+                    .then(()=>{alert("Added to favorites")})
+            }
+
+            function searchPlaces(){
+                let input = document.getElementById("search").value.toLowerCase()
+                let results = document.getElementById("searchResults")
+
+                results.innerHTML = ""
+
+                if(input.length == 0) return
+
+                places.forEach(place=> {
+                    if(place.name.toLowerCase().includes(input)) {
+                        let li = document.createElement("li")
+                        li.innerText = place.name
+                        li.onclick = function() {
+                            getWeather(place.lat, place.long)
+                            results.innerHTML = ""
+                        }
+                        results.appendChild(li)
+                    }
+                })
+            }
+
+            function loadFavorite(){
+                let select = document.getElementById("favorites")
+                let option = select.options[select.selectedIndex]
+
+                let lat = option.dataset.lat
+                let long = option.dataset.long
+
+                if(!lat) return
+                getWeather(lat,long)
+            }
+        </script>
     </div>
 
     <div id="map"></div>
@@ -57,6 +113,9 @@
         map.setMaxBounds(norwayBounds);
 
         var currentMarker = null;
+        let currentTettsted = null;
+        let currentKommune = null;
+        let currentFylke = null;
 
         function getWeather(lat, lon) {
             fetch(`/weather?lat=${lat}&lon=${lon}`)
@@ -68,9 +127,12 @@
                             "<p style='color:red;'>Error loading weather</p>";
                         return;
                     }
+                    currentTettsted = data.place
+                    currentKommune = data.municipality
+                    currentFylke = data.county
 
                     document.getElementById("weatherBox").innerHTML = `
-                    <h3>Weather Data for ${data.place},${data.county}</h3>
+                    <h3>Weather Data for ${data.place},${data.municipality}</h3>
                     <p><strong>Temperature:</strong> ${data.temperature} °C</p>
                     <p><strong>Wind Speed:</strong> ${data.wind_speed} m/s</p>
                     <p><strong>Humidity:</strong> ${data.humidity} %</p>
