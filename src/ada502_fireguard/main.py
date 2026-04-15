@@ -390,8 +390,14 @@ if __name__ == '__main__':
 def add_favorite(tettsted_name, kommune_name, fylke_name):
     user_id = session.get("keycloak_id")
     fylket = Fylke.query.filter_by(name==fylke_name).first()
+    if not fylket:
+        return "ingen fylke med navn " + kommune_name, 404
     kommunen = Kommune.query.filter_by(name == kommune_name).filter_by(fylke_name==fylket.name).first()
+    if not kommunen:
+        return "ingen kommune med navn "+ kommune_name, 404
     tettsted = Tettsted.query.filter_by(name == tettsted_name).filter_by(kommune_id==kommunen.id)
+    if not tettsted:
+        return "ingen tettsted med navn " + tettsted_name, 404
 
     fav = Favoritter (
         bruker_id = user_id,
