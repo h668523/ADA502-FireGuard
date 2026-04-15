@@ -389,13 +389,13 @@ if __name__ == '__main__':
 @app.route("/favorite/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>", methods=["POST"])
 def add_favorite(tettsted_name, kommune_name, fylke_name):
     user_id = session.get("keycloak_id")
-    fylket = Fylke.query.filter_by(name==fylke_name).first()
+    fylket = Fylke.query.filter_by(name=fylke_name).first()
     if not fylket:
         return "ingen fylke med navn " + kommune_name, 404
-    kommunen = Kommune.query.filter_by(name == kommune_name).filter_by(fylke_name==fylket.name).first()
+    kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
     if not kommunen:
         return "ingen kommune med navn "+ kommune_name, 404
-    tettsted = Tettsted.query.filter_by(name == tettsted_name).filter_by(kommune_id==kommunen.id)
+    tettsted = Tettsted.query.filter_by(name = tettsted_name, kommune_id=kommunen.id).first()
     if not tettsted:
         return "ingen tettsted med navn " + tettsted_name, 404
 
