@@ -398,7 +398,8 @@ def trigger_daily_task():
 # Database greier
 @app.route("/favorite", methods=["POST"])
 def add_favorite():
-    print(request.get_json())
+    print(request.headers)
+    print(request.data)
     data = request.get_json()
     if not data:
         return "No JSON received", 400
