@@ -421,14 +421,14 @@ def add_favorite():
     if not kommunen:
         new_kommune(kommune, fylke)
     kommunen = Kommune.query.filter_by(name = kommune, fylke_name=fylket.name).first()
-    tettsted = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
-    if not tettsted:
+    tettstedet = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
+    if not tettstedet:
         new_tettsted(tettsted, kommunen.id, data.get("lat"), data.get("long"))
-    tettsted = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
+    tettstedet = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
 
     fav = Favoritter (
         bruker_id = user_id,
-        tettsted_id = tettsted.id
+        tettsted_id = tettstedet.id
     )
 
     db.session.add(fav)
