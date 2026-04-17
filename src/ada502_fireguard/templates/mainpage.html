@@ -146,11 +146,11 @@
                 results.innerHTML = ""
 
                 if(input.length == 0) return
-                count = 0
+                let count = 0
                 
                 for(let place of places) {
-                    let li = document.createElement("li")
-                    if(place.name.toLowerCase.includes(input)) {
+                    if(place.name.toLowerCase().includes(input)) {
+                        let li = document.createElement("li")
                         li.innerText = place.name
                     }
                     li.onclick = function() {
