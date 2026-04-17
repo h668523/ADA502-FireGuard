@@ -149,7 +149,15 @@
                 let count = 0
                 
                 for(let place of places) {
-                    console.log(place.name)
+                    if(place.name.toLowerCase().includes(input)) {
+                        let li = document.createElement("li")
+                        li.innerText = place.name
+                        
+                        results.appendChild(li)
+                    
+                        count++
+                        if(count>=5)break
+                    }
                 }
                 
             }
