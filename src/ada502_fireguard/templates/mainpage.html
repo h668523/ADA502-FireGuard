@@ -149,17 +149,7 @@
                 let count = 0
                 
                 for(let place of places) {
-                    if(place.name.toLowerCase().includes(input)) {
-                        let li = document.createElement("li")
-                        li.innerText = place.name
-                    }
-                    li.onclick = function() {
-                        getWeather(place.lat, place.long)
-                        results.innerHTML = ""
-                    }
-                    results.appendChild(li)
-                    count++
-                    if(count>=5)break
+                    console.log(place.name)
                 }
                 
             }
