@@ -146,10 +146,9 @@
                 results.innerHTML = ""
 
                 if(input.length == 0) return
-
-                let matches = places.filter(p=> p.name.toLowerCase().include(input))
+                count = 0
                 
-                matches.forEach(place=> {
+                for(let place of places) {
                     let li = document.createElement("li")
                     li.innerText = place.name
                     li.onclick = function() {
@@ -157,7 +156,9 @@
                         results.innerHTML = ""
                     }
                     results.appendChild(li)
-                })
+                    count++
+                    if(count>=5)break
+                }
                 
             }
 
