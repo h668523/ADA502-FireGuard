@@ -147,7 +147,16 @@
                         lat: latitude,
                         long: longitude
                     })
-                }).then(res=>res.json())
+                }).then(()=> {
+                    let select = document.getElementById("favorites")
+                    for(let option of select.options) {
+                        if(option.text === currentTettsted) {
+                            select.removeChild(option)
+                            break
+                        }
+                    }
+                })
+                document.getElementById("favoriteBtn").innerText = "Add to favorites"
                 alert("Removed from favorites")
             }
 

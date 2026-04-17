@@ -447,7 +447,7 @@ def unfavorite():
     kommunen = Kommune.query.filter_by(name = kommune, fylke_name=fylket.name).first()
     tettstedet = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
 
-    favoritten = Favoritter.query.filter_by(bruker_id=user_id, tettsted_id=tettstedet.id)
+    favoritten = Favoritter.query.filter_by(bruker_id=user_id, tettsted_id=tettstedet.id).first()
     if not favoritten:
         return "Stedet er ikke favorittet", 400
     db.session.delete(favoritten)
