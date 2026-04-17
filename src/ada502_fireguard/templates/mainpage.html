@@ -57,8 +57,8 @@
         <select id="favorites" onchange="loadFavorite()">
             <option value="" disabled selected hidden></option>
             {% for place in favorites %}
-            <option data-lat="{{place.lat}}"
-                    data-long="{{place.long}}">
+            <option data-lat="{{place.latitude}}"
+                    data-long="{{place.longitude}}">
                 {{place.name}}
             </option>
             {%endfor%}
@@ -96,8 +96,19 @@
                         lat: latitude,
                         long: longitude
                     })
-                }).then(res=>res.json()) 
-                   alert("Added to favorites")
+                }).then(res=>res.json())
+                .then(response=> {
+                    if(!response.ok) throw new Error("failed");
+
+                    let select = document.getElementById("favorites")
+                    let option = document.createElement("option")
+                    option.text = currentTettsted
+                    option.dataset.lat = latitude
+                    option.dataset.long = longitude
+
+                    select.appendChild(option)
+                    alert("Added to favorites")
+                })
             }
 
             function searchPlaces(){
@@ -125,6 +136,9 @@
                 let select = document.getElementById("favorites")
                 let option = select.options[select.selectedIndex]
                 if(!option.dataset.lat) return
+                
+                map.setView[option.dataset.lat, option.dataset.long]
+                currentMarker = L.marker([option.dataset.lat, option.dataset.long]).addTo(map);
 
                 getWeather(option.dataset.lat, option.dataset.long)
             }
