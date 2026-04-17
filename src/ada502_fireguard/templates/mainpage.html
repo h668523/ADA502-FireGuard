@@ -150,7 +150,9 @@
                 
                 for(let place of places) {
                     let li = document.createElement("li")
-                    li.innerText = place.name
+                    if(place.name.toLowerCase.includes(input)) {
+                        li.innerText = place.name
+                    }
                     li.onclick = function() {
                         getWeather(place.lat, place.long)
                         results.innerHTML = ""
