@@ -28,7 +28,6 @@
             list-style: none;
             padding: 0;
             margin-top: 5px;
-            max-width: 200px;
         }
         #searchResults li{
             padding: 5px;
@@ -129,11 +128,15 @@
 
                     let select = document.getElementById("favorites")
                     let option = document.createElement("option")
+
                     option.text = currentTettsted
                     option.dataset.lat = latitude
                     option.dataset.long = longitude
 
                     select.appendChild(option)
+                    select.value = option.value
+
+                    document.getElementById("favoriteBtn").innerText="Remove from favorites"
                 })
                 alert("Added to favorites")
             }
