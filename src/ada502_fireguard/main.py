@@ -358,7 +358,7 @@ def mainpage():
     user = session["user"]
     if not user:
         return redirect("/login")
-    steder = Tettsted.query.order_by(Tettsted.name.asc()).all()
+    steder = Tettsted.query.all()
     places = [{
         "name": s.name,
         "lat": s.latitude,
