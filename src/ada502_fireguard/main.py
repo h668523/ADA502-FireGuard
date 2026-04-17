@@ -435,6 +435,34 @@ def add_favorite():
     db.session.commit()
     return "", 204
 
+@app.route("/nytt-sted", methods=["POST"])
+def nytt_sted():
+    data = request.get_json()
+
+    tettsted_name = data.get("tettsted")
+    kommune_name = data.get("kommune")
+    fylke_name = data.get("fylke")
+    lat = data.get("lat")
+    long = data.get("long")
+
+    if not all([tettsted_name, kommune_name, fylke_name, lat, long]):
+        return "Missing data", 400
+    
+    fylket = Fylke.query.filter_by(name=fylke_name).first()
+    if not fylket:
+        return "ingen fylke med navn " + fylke_name, 404
+    
+    kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
+    if not kommunen:
+        new_kommune(kommune_name, fylke_name)
+        kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
+        
+    tettstedet = Tettsted.query.filter_by(name = tettsted_name, kommune_id=kommunen.id).first()
+    if not tettstedet:
+        new_tettsted(tettsted_name, kommunen.id, lat, long)
+    return jsonify({"status":"ok"})
+
+
 def new_kommune(kommune_navn, fylke):
     kommun = Kommune(
         name=kommune_navn,
