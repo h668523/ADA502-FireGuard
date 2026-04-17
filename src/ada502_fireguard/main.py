@@ -396,25 +396,29 @@ def trigger_daily_task():
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Database greier
-@app.route("/favorite", methods=["POST"]) #/<string:tettsted_name>/<string:kommune_name>/<string:fylke_name>
-def add_favorite(tettsted_name, kommune_name, fylke_name):
-    print(session)
-    print(fylke_name,tettsted_name,kommune_name)
+@app.route("/favorite", methods=["POST"])
+def add_favorite():
+    data = request.json
+    print(data)
+    tettsted = data.get("tettsted")
+    kommune = data.get("kommune")
+    fylke = data.get("fylke")
+
     userinfo = session.get("user")
     if not userinfo:
         return "Missing user", 401
     user_id = userinfo.get("sub")
     if not user_id:
         return "Invalid session, no sub", 401
-    fylket = Fylke.query.filter_by(name=fylke_name).first()
+    fylket = Fylke.query.filter_by(name=fylke).first()
     if not fylket:
-        return "ingen fylke med navn " + fylke_name, 404
-    kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
+        return "ingen fylke med navn " + fylke, 404
+    kommunen = Kommune.query.filter_by(name = kommune, fylke_name=fylket.name).first()
     if not kommunen:
-        return "ingen kommune med navn "+ kommune_name, 404
-    tettsted = Tettsted.query.filter_by(name = tettsted_name, kommune_id=kommunen.id).first()
+        return "ingen kommune med navn "+ kommune, 404
+    tettsted = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
     if not tettsted:
-        return "ingen tettsted med navn " + tettsted_name, 404
+        return "ingen tettsted med navn " + tettsted, 404
 
     fav = Favoritter (
         bruker_id = user_id,

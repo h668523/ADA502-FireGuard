@@ -87,8 +87,15 @@
                     alert("Select a place first!")
                     return
                 }
-                fetch(`/favorite`, {method:"POST", credentials: "include"}) <!-- ${encodeURIComponent(currentTettsted)}/${encodeURIComponent(currentKommune)}/${encodeURIComponent(currentFylke)}-->
-                    .then(()=>{alert("Added to favorites")})
+                
+                fetch(`/favorite`, {method:"POST", credentials: "include", headers: {
+                    body: JSON.stringify({
+                        tettsted: currentTettsted,
+                        kommune: currentKommune,
+                        fylke: currentFylke
+                    })
+                }}).then(res=>res.json()) 
+                   .then(data=>{alert("Added to favorites")})
             }
 
             function searchPlaces(){
