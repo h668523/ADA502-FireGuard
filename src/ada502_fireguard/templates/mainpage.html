@@ -45,8 +45,8 @@
             padding:8px;
             border-radius:6px;
             border:none;
-            background-color: #eaeaea;
-            color: black;
+            background-color: #4CAF50;
+            color: white;
             cursor:pointer;
         }
         #forecastDetails div{
@@ -56,7 +56,7 @@
         }
         
         button {
-            padding: 10px 15px;
+            padding: 5px 10px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -88,22 +88,22 @@
 <body>
 
     <div id="panel">
-        <div style="top:20px; right:20px;">
+        <div style="top:10px; right:10px;">
             Logged in as: {{username}}
             <button onclick="window.location.href='/logout'">Log out</button>
         </div>
-        Favorites:
-        <select id="favorites" onchange="loadFavorite()">
-            <option value="" disabled selected hidden></option>
-            {% for place in favorites %}
-            <option data-lat="{{place.latitude}}" data-long="{{place.longitude}}">
-                {{place.name}}
-            </option>
-            {%endfor%}
-        </select>
 
         <h2>Search
             <input type="text" id="search" placeholder="" onkeyup="searchPlaces()">
+            Favorites:
+            <select id="favorites" onchange="loadFavorite()">
+                <option value="" disabled selected hidden></option>
+                {% for place in favorites %}
+                <option data-lat="{{place.latitude}}" data-long="{{place.longitude}}">
+                    {{place.name}}
+                </option>
+                {%endfor%}
+            </select>
             <ul id="searchResults"></ul></input>
             <button id="favoriteBtn" onclick="toggleFavorite()">Add to favorites</button>
         </h2>
@@ -347,7 +347,7 @@
                     }
 
                     document.getElementById("weatherBox").innerHTML = `
-                    <h3>Weather Data for ${data.place}, ${data.municipality} at ${data.timestamp}</h3>
+                    <h3>Current weather at ${data.place}, ${data.municipality}</h3>
                     <div class="weather-grid">
                         <div><strong>Temperature</strong></div>
                         <div><strong>Wind Speed</strong></div>
