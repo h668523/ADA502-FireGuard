@@ -80,7 +80,7 @@ class Favoritter(db.Model):
 
 class HistoriskData(db.Model):
     __tablename__ = "historiskData"
-    id = db.column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
     dato = db.Column(db.Date)
     temperatur = db.Column(db.Float)
@@ -94,7 +94,7 @@ def debug_request():
     print("PATH:", request.path)
     
 # ---------------Sende Emails--------------------
-# Example users used to create emails, will be changed later
+# Example users used to create emails, will be changed later det er snart
 users_with_favorites = [
     {
         "email": "669866@stud.hvl.no",
