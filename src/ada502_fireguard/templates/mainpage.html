@@ -24,15 +24,18 @@
             width: 50%;
             height: 100%
         }
-        #searchResults{
+
+        #searchResults {
             list-style: none;
             padding: 0;
             margin-top: 5px;
         }
-        #searchResults li{
+
+        #searchResults li {
             padding: 5px;
             cursor: pointer;
         }
+
         #searchResults li:hover {
             background-color: #eee;
         }
@@ -83,8 +86,7 @@
         <select id="favorites" onchange="loadFavorite()">
             <option value="" disabled selected hidden></option>
             {% for place in favorites %}
-            <option data-lat="{{place.latitude}}"
-                    data-long="{{place.longitude}}">
+            <option data-lat="{{place.latitude}}" data-long="{{place.longitude}}">
                 {{place.name}}
             </option>
             {%endfor%}
@@ -106,31 +108,32 @@
             <button id="triggerTaskBtn" onclick="triggerDailyTask()">
                 Trigger Daily Task (Test)
             </button>
-            <p id="taskStatus" style="margin-top: 10px; font-size: 14px;"></p>
+            <p id="taskStatus" style="margin-top: 10px; font-size: 14px;"></p> -->
 
             <button id="submitPlace" onclick="submitNewPlace()">
                 Submit place
             </button> 
         </div>
         <script>
-            let places = {{places | tojson}};
+            let places = {{ places | tojson}};
 
             function toggleFavorite() {
-                if(!currentTettsted) {
+                if (!currentTettsted) {
                     alert("Select a place first!")
                     return
                 }
                 let btn = document.getElementById("favoriteBtn")
 
-                if(btn.innerText == "Remove from favorites") {
+                if (btn.innerText == "Remove from favorites") {
                     removeFavorite()
                 } else {
                     addFavorite()
                 }
             }
 
-            function addFavorite() {                
-                fetch(`/favorite`, {method:"POST", credentials: "include", headers: { "Content-Type": "application/json"}, 
+            function addFavorite() {
+                fetch(`/favorite`, {
+                    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         tettsted: currentTettsted,
                         kommune: currentKommune,
@@ -138,27 +141,28 @@
                         lat: latitude,
                         long: longitude
                     })
-                }).then(res=>res.json())
-                .then(response=> {
-                    if(!response.ok) throw new Error("failed");
+                }).then(res => res.json())
+                    .then(response => {
+                        if (!response.ok) throw new Error("failed");
 
-                    let select = document.getElementById("favorites")
-                    let option = document.createElement("option")
+                        let select = document.getElementById("favorites")
+                        let option = document.createElement("option")
 
-                    option.text = currentTettsted
-                    option.dataset.lat = latitude
-                    option.dataset.long = longitude
+                        option.text = currentTettsted
+                        option.dataset.lat = latitude
+                        option.dataset.long = longitude
 
-                    select.appendChild(option)
-                    select.value = option.value
+                        select.appendChild(option)
+                        select.value = option.value
 
-                    document.getElementById("favoriteBtn").innerText="Remove from favorites"
-                })
+                        document.getElementById("favoriteBtn").innerText = "Remove from favorites"
+                    })
                 alert("Added to favorites")
             }
 
             function removeFavorite() {
-                fetch(`/unfavorite`, {method:"POST", credentials: "include", headers: { "Content-Type": "application/json"}, 
+                fetch(`/unfavorite`, {
+                    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         tettsted: currentTettsted,
                         kommune: currentKommune,
@@ -166,10 +170,10 @@
                         lat: latitude,
                         long: longitude
                     })
-                }).then(()=> {
+                }).then(() => {
                     let select = document.getElementById("favorites")
-                    for(let option of select.options) {
-                        if(option.text === currentTettsted) {
+                    for (let option of select.options) {
+                        if (option.text === currentTettsted) {
                             select.removeChild(option)
                             break
                         }
@@ -179,11 +183,11 @@
                 alert("Removed from favorites")
             }
 
-            function loadFavorite(){
+            function loadFavorite() {
                 let select = document.getElementById("favorites")
                 let option = select.options[select.selectedIndex]
-                if(!option.dataset.lat) return
-                
+                if (!option.dataset.lat) return
+
                 map.setView([option.dataset.lat, option.dataset.long], 10)
                 if (currentMarker !== null) {
                     map.removeLayer(currentMarker);
@@ -192,22 +196,22 @@
 
                 getWeather(option.dataset.lat, option.dataset.long)
             }
-            
-            function searchPlaces(){
+
+            function searchPlaces() {
                 let input = document.getElementById("search").value.toLowerCase()
                 let results = document.getElementById("searchResults")
 
                 results.innerHTML = ""
 
-                if(input.length == 0) return
+                if (input.length == 0) return
                 let count = 0
-                
-                for(let place of places) {
-                    if(place.name.toLowerCase().includes(input)) {
+
+                for (let place of places) {
+                    if (place.name.toLowerCase().includes(input)) {
                         let li = document.createElement("li")
                         li.innerText = place.name + ", " + place.kommune
 
-                        li.onclick = function() {
+                        li.onclick = function () {
                             getWeather(place.lat, place.long)
                             results.innerHTML = ""
                             map.setView([place.lat, place.long], 10)
@@ -218,18 +222,19 @@
                         }
 
                         results.appendChild(li)
-                    
+
                         count++
-                        if(count>=5)break
+                        if (count >= 5) break
                     }
                 }
-                
+
             }
-            
+
             function submitNewPlace() {
-                fetch("/nytt-sted", {method: "POST", headers:{
-                    "Content-Type": "application/json"
-                }, 
+                fetch("/nytt-sted", {
+                    method: "POST", headers: {
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify({
                         tettsted: currentTettsted,
                         kommune: currentKommune,
@@ -247,7 +252,8 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <script>
-        // GPT-kode. Sender emails
+        // GPT-kode. Brukes til å teste. Sender email når knappen trykkes på.
+        /*
         function triggerDailyTask() {
             const btn = document.getElementById("triggerTaskBtn");
             const status = document.getElementById("taskStatus");
@@ -279,6 +285,7 @@
                     btn.disabled = false;
                 });
         }
+        */
 
         var map = L.map('map').setView([65.418873, 15.668229], 5);
 
@@ -317,13 +324,13 @@
                     let btn = document.getElementById("favoriteBtn")
                     let isFavorite = false
 
-                    document.querySelectorAll("#favorites option").forEach(option=> {
-                        if(option.text.trim() === currentTettsted.trim()) {
+                    document.querySelectorAll("#favorites option").forEach(option => {
+                        if (option.text.trim() === currentTettsted.trim()) {
                             isFavorite = true
                         }
                     })
 
-                    if(isFavorite) {
+                    if (isFavorite) {
                         btn.innerText = "Remove from favorites"
                     } else {
                         btn.innerText = "Add to favorites"
