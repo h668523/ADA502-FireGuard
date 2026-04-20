@@ -275,9 +275,11 @@ def calculate_weather_data(lat, lon):
             "humidity": entry["relative_humidity"],
             "ttf": round(ttf_value, 2)
         })
-
-        if len(forecast) > 0:
+        if (forecast.get("temperature") is None or
+            forecast.get("wind_speed")is None or
+            forecast.get("humidity") is None):
             forecast.pop()
+
     # ------------------------------------------------------
 
     return {
