@@ -259,21 +259,14 @@ def calculate_weather_data(lat, lon):
 
     # Future time to flashover
     forecast = []
-    weather_lookup = {}
 
-    for entry in timeseries:
-        weather_lookup[entry["time"]] = entry["data"]["instant"]["details"]
+    limit = min(len(ttf_csv), len(timeseries))
 
-    for i in range(1, len(ttf_csv)):
+    for i in range(1, limit):
         timestamp = ttf_csv["timestamp"].iloc[i]
         ttf_value = float(ttf_csv["ttf"].iloc[i])
 
-        time_key = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        entry = weather_lookup.get(time_key)
-
-        if not entry:
-            continue
+        entry = timeseries[i]["data"]["instant"]["details"]
 
         forecast.append({
             "time": timestamp.isoformat(),
@@ -282,6 +275,9 @@ def calculate_weather_data(lat, lon):
             "humidity": entry["relative_humidity"],
             "ttf": round(ttf_value, 2)
         })
+
+        if len(forecast) > 0:
+            forecast.pop()
     # ------------------------------------------------------
 
     return {
