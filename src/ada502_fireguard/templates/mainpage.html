@@ -347,7 +347,11 @@
                     }
 
                     document.getElementById("weatherBox").innerHTML = `
-                    <h3>Current weather at ${data.place}, ${data.municipality}</h3>
+                    <h3>Current weather at ${data.place}, ${data.municipality}
+                        <select id="historyDates" onchange="loadHistoryDay()">
+                            <option value="" disabled selected hidden>Historic data</option>
+                        <select>
+                    </h3>
                     <div class="weather-grid">
                         <div><strong>Temperature</strong></div>
                         <div><strong>Wind Speed</strong></div>
@@ -361,10 +365,41 @@
                     </div>
                     `
                     renderForecast(data.forecast)
+                    loadHistoryDates(lat, lon)
                 })
                 .catch(error => {
                     console.error("Weather fetch error:", error);
                 });
+        }
+
+        function loadHistoryDates(lat, lon) {
+            fetch(`/history_dates?lat=${lat}&lon=${lon}`)
+            .then(r=> r.json())
+            .then(data=> {
+                let select = document.getElemntById("historyDates")
+                select.innerHTML= '<option value="" disabled selected hidden>Historic data</option>'
+
+                data.forEach(row=>{
+                    let option = document.createElement("option")
+                    option.text = row.date
+                    option.dataset.temp = row.temp
+                    option.dataset.wind = row.winr
+                    option.dataset.humidity = row.humidity
+                    option.dataset.firerisk = row.firerisk
+
+                    select.appendChild(option)
+                })
+            })
+        }
+
+        function loadHistoryDay() {
+            let select = document.getElementById("historyDates")
+            let option = select.selectedOptions[0]
+
+            document.getElementById("temperature").innerText = option.dataset.temp
+            document.getElementById("wind").innerText = option.dataset.wind
+            document.getElementById("humidity").innerText = option.dataset.humidity
+            document.getElementById("firerisk").innerText = option.dataset.firerisk
         }
 
         function renderForecast(forecast) {

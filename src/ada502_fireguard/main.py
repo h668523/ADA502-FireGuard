@@ -9,6 +9,7 @@ from dateutil import parser
 import csv
 from keycloak import KeycloakOpenID
 from flask_sqlalchemy import SQLAlchemy
+import time
 
 keycloak_openid = KeycloakOpenID(
     server_url="http://keycloak:8080/", #158.39.75.130
@@ -76,6 +77,16 @@ class Favoritter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bruker_id = db.Column(db.String(100), db.ForeignKey("bruker.keycloak_id"))
     tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
+
+class HistoriskData(db.Model):
+    __tablename__ = "historiskData"
+    id = db.column(db.Integer, primary_key=True)
+    tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
+    dato = db.Column(db.Date)
+    temperatur = db.Column(db.Float)
+    vind = db.Column(db.Float)
+    luftfuktighet = db.Column(db.Float)
+    firerisk = db.Column(db.Float)
 
 @app.before_request
 def debug_request():
@@ -188,11 +199,54 @@ scheduler.add_job(
     name="Daily notification at midnight",
     replace_existing=True
 )
+scheduler.add_job(
+    func=save_midday_weather,
+    trigger="cron",
+    hour=0,
+    minute=10,
+    id="save_midday_weather",
+    name="Saving midday weather",
+    replace_existing=True
+)
 scheduler.start()
 
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
 # ---------------Sende Emails--------------------
+
+def save_midday_weather():
+    tettsteder = db.session.query(Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
+
+    for t in tettsteder:
+        time.sleep(5)
+        data = calculate_weather_data(t.latitude, t.longitude)
+        if not data:
+            return
+        
+        for entry in data["forecast"]:
+            timestamp = parser.isoparse(entry["time"])
+            if timestamp.hour != 12:
+                continue
+            
+            dato = timestamp.date()
+            existing = HistoriskData.query.filter_by(
+                tettsted_id = t.id,
+                dato=dato
+            )
+            if existing:
+                continue
+
+            record = HistoriskData(
+                tettsted_id=t.id, 
+                dato=dato, 
+                temperatur=entry["temperature"], 
+                vind=entry["wind_speed"], 
+                luftfuktighet=entry["humidity"], 
+                firerisk=entry["ttf"]
+            )
+            db.session.add(record)
+        db.session.commit()
+
 
 
 def calculate_weather_data(lat, lon):
@@ -494,6 +548,27 @@ def nytt_sted():
         new_tettsted(tettsted_name, kommunen.id, lat, long)
     return jsonify({"status":"ok"})
 
+@app.route("/history_dates")
+def history_dates():
+    lat = request.args.get("lat")
+    long = request.args.get("long")
+
+    tettsted = Tettsted.query.filter_by(latitude=lat, longitude=long).first()
+
+    if not tettsted:
+        return jsonify([])
+    
+    rows = HistoriskData.query.filter_by(tettsted_id=tettsted.id).order_by(HistoriskData.dato.desc()).all()
+
+    return jsonify([{
+            "date": r.dato.isoformat(),
+            "temp": r.temperatur,
+            "wind": r.vind,
+            "humidity": r.luftfuktighet,
+            "firerisk": r.firerisk
+        }
+        for r in rows
+    ])
 
 def new_kommune(kommune_navn, fylke):
     kommun = Kommune(
