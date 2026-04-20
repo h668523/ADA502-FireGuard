@@ -261,7 +261,9 @@ def calculate_weather_data(lat, lon):
     # Future time to flashover
     forecast = []
 
-    for i in range(1, len(ttf_csv)):
+    limit = min(len(ttf_csv), len(timeseries))
+
+    for i in range(1, limit):
         timestamp = ttf_csv["timestamp"].iloc[i]
         ttf_value = float(ttf_csv["ttf"].iloc[i])
 
