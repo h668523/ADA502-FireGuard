@@ -570,6 +570,10 @@ def history_dates():
         for r in rows
     ])
 
+@app.route("/save_the_day")
+def save_the_day():
+    save_midday_weather()
+
 def new_kommune(kommune_navn, fylke):
     kommun = Kommune(
         name=kommune_navn,
