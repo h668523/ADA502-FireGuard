@@ -360,7 +360,7 @@
                             <option value="" disabled selected hidden>Historic data</option>
                         </select>
                     </h3>
-                    <div class="weather-grid">
+                    <div id="actualData" class="weather-grid">
                         <div><strong>Temperature</strong></div>
                         <div><strong>Wind Speed</strong></div>
                         <div><strong>Humidity</strong></div>
@@ -402,12 +402,19 @@
 
         function loadHistoryDay() {
             let select = document.getElementById("historyDates")
-            let option = select.selectedOptions[0]
+            let option = select.options[select.selectedIndex]
 
-            document.getElementById("temperature").innerText = option.dataset.temp
-            document.getElementById("wind").innerText = option.dataset.wind
-            document.getElementById("humidity").innerText = option.dataset.humidity
-            document.getElementById("firerisk").innerText = option.dataset.firerisk
+            document.getElementById("weatherBox").innerHTML = `
+                <div><strong>Temperature</strong></div>
+                <div><strong>Wind Speed</strong></div>
+                <div><strong>Humidity</strong></div>
+                <div><strong>Time to flashover</strong></div>
+
+                <div>${option.dataset.temp} °C</div>
+                <div>${option.dataset.wind}m/s</div>
+                <div>${option.dataset.humidity}%</div>
+                <div>${option.dataset.firerisk} min</div>
+                `
         }
 
         function renderForecast(forecast) {
