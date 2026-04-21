@@ -206,7 +206,7 @@ def save_midday_weather():
                 existing = HistoriskData.query.filter_by(
                     tettsted_id = t.id,
                     dato=dato
-                )
+                ).first()
                 if existing:
                     continue
 
@@ -219,8 +219,8 @@ def save_midday_weather():
                     firerisk=entry["ttf"]
                 )
                 db.session.add(record)
-            db.session.commit()
-            return "Recorded weather data", 204
+        db.session.commit()
+        return "Recorded weather data", 204
 
 
 # Initialize the scheduler
