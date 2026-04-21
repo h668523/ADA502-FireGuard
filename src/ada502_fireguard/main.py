@@ -156,6 +156,19 @@ def build_email_for_user(user: dict) -> EmailMessage:
 def send_daily_notification():
     # Sender emailen
     print(f"[{datetime.now()}] Running daily notification task...")
+    with app.app_context():
+
+        emailrows = (db.session.query(Bruker.email, Tettsted.latitude, Tettsted.longitude).join(Favoritter, Bruker.id == Favoritter.bruker_id).join(Tettsted, Favoritter.tettsted_id == Tettsted.id).all())
+
+        users_with_favorites = {}
+
+        for email,lat,lon in emailrows:
+            users_with_favorites[email]["favorites"].append({
+                "lat": lat,
+                "lon": lon
+            })
+        users_with_favorites = list(users_with_favorites.values())
+        app.logger.info(users_with_favorites)
 
     if not users_with_favorites:
         print(f"[{datetime.now()}] No users to notify.")
