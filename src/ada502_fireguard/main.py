@@ -355,21 +355,27 @@ def calculate_weather_data(lat, lon):
     # Future time to flashover
     forecast = []
 
-    limit = min(len(ttf_csv), len(timeseries_future))
+    # Calculate how many historic data points were added
+    historic_count = len(weatherdata_past)
 
-    for i in range(1, limit):
-        timestamp = ttf_csv["timestamp"].iloc[i]
-        ttf_value = float(ttf_csv["ttf"].iloc[i])
+    # Only iterate through the timeseries_future entries
+    for i in range(1, len(timeseries_future)):
+        # Adjust index to account for historic data in ttf_csv
+        ttf_index = historic_count + i
 
-        entry = timeseries_future[i]["data"]["instant"]["details"]
+        if ttf_index < len(ttf_csv):
+            timestamp = ttf_csv["timestamp"].iloc[ttf_index]
+            ttf_value = float(ttf_csv["ttf"].iloc[ttf_index])
 
-        forecast.append({
-            "time": timestamp.isoformat(),
-            "temperature": entry["air_temperature"],
-            "wind_speed": entry["wind_speed"],
-            "humidity": entry["relative_humidity"],
-            "ttf": round(ttf_value, 2)
-        })
+            entry = timeseries_future[i]["data"]["instant"]["details"]
+
+            forecast.append({
+                "time": timestamp.isoformat(),
+                "temperature": entry["air_temperature"],
+                "wind_speed": entry["wind_speed"],
+                "humidity": entry["relative_humidity"],
+                "ttf": round(ttf_value, 2)
+            })
 
     # ------------------------------------------------------
     return {

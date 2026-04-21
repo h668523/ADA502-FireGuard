@@ -41,20 +41,21 @@
         }
 
         #forecastModules button {
-            margin:4px;
-            padding:8px;
-            border-radius:6px;
-            border:none;
+            margin: 4px;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
             background-color: #4CAF50;
             color: white;
-            cursor:pointer;
+            cursor: pointer;
         }
-        #forecastDetails div{
-            border:1px solid #ccc;
-            margin:6px 0;
-            padding:8px;
+
+        #forecastDetails div {
+            border: 1px solid #ccc;
+            margin: 6px 0;
+            padding: 8px;
         }
-        
+
         button {
             padding: 5px 10px;
             background-color: #4CAF50;
@@ -75,11 +76,11 @@
         }
 
         .weather-grid {
-            display:grid;
+            display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap:10px;
+            gap: 10px;
             text-align: center;
-            padding:10px;
+            padding: 10px;
 
         }
     </style>
@@ -122,7 +123,7 @@
 
             <button id="submitPlace" onclick="submitNewPlace()">
                 Submit place
-            </button> 
+            </button>
             <button id="saveWeatherToday" onclick="saveNewDay()">Save the day!</button>
         </div>
         <script>
@@ -380,22 +381,22 @@
 
         function loadHistoryDates(lat, lon) {
             fetch(`/history_dates?lat=${lat}&lon=${lon}`)
-            .then(r=> r.json())
-            .then(data=> {
-                let select = document.getElemntById("historyDates")
-                select.innerHTML= '<option value="" disabled selected hidden>Historic data</option>'
+                .then(r => r.json())
+                .then(data => {
+                    let select = document.getElemntById("historyDates")
+                    select.innerHTML = '<option value="" disabled selected hidden>Historic data</option>'
 
-                data.forEach(row=>{
-                    let option = document.createElement("option")
-                    option.text = row.date
-                    option.dataset.temp = row.temp
-                    option.dataset.wind = row.winr
-                    option.dataset.humidity = row.humidity
-                    option.dataset.firerisk = row.firerisk
+                    data.forEach(row => {
+                        let option = document.createElement("option")
+                        option.text = row.date
+                        option.dataset.temp = row.temp
+                        option.dataset.wind = row.winr
+                        option.dataset.humidity = row.humidity
+                        option.dataset.firerisk = row.firerisk
 
-                    select.appendChild(option)
+                        select.appendChild(option)
+                    })
                 })
-            })
         }
 
         function loadHistoryDay() {
@@ -412,14 +413,24 @@
             let modules = document.getElementById("forecastModules")
             modules.innerHTML = ""
 
+            // Get today's date in YYYY-MM-DD format
+            let today = new Date()
+            let todayString = today.getFullYear() + "-" +
+                String(today.getMonth() + 1).padStart(2, "0") + "-" +
+                String(today.getDate()).padStart(2, "0")
+
             let days = {}
 
             forecast.forEach(entry => {
                 let date = entry.time.split("T")[0]
-                if(!days[date]) days[date] = []
-                days[date].push(entry)
+                // Only include entries from today onwards
+                if (date >= todayString) {
+                    if (!days[date]) days[date] = []
+                    days[date].push(entry)
+                }
             })
-            Object.keys(days).slice(0,4).forEach(date=> {
+            // Show today and the next 3 days (4 days total)
+            Object.keys(days).slice(0, 4).forEach(date => {
                 let btn = document.createElement("button")
                 let d = new Date(date)
                 btn.innerText = d.toLocaleDateString("nb-NO", {
@@ -434,11 +445,11 @@
 
         function showDay(entries) {
             let container = document.getElementById("forecastDetails")
-            container.innerHTML=""
+            container.innerHTML = ""
 
-            entries.forEach(entry=> {
+            entries.forEach(entry => {
                 let date = new Date(entry.time)
-                if(date.getHours() % 6 !== 0) return
+                if (date.getHours() % 6 !== 0) return
                 let div = document.createElement("div")
 
                 div.innerHTML = `
