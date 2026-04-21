@@ -17,6 +17,7 @@ import csv
 from keycloak import KeycloakOpenID
 from flask_sqlalchemy import SQLAlchemy
 import time
+from datetime import date
 
 keycloak_openid = KeycloakOpenID(
     server_url="http://keycloak:8080/",  # 158.39.75.130
@@ -85,7 +86,7 @@ class Favoritter(db.Model):
 
 
 class HistoriskData(db.Model):
-    __tablename__ = "historiskData"
+    __tablename__ = "historiskdata"
     id = db.Column(db.Integer, primary_key=True)
     tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
     dato = db.Column(db.Date)
@@ -197,26 +198,27 @@ def send_daily_notification():
 
 
 def save_midday_weather():
-    with app.context():
+    with app.app_context():
         tettsteder = db.session.query(
             Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
+        today = date.today()
 
         for t in tettsteder:
             time.sleep(5)
             data = calculate_weather_data(t.latitude, t.longitude)
             if not data:
-                return
+                continue
 
             for entry in data["forecast"]:
                 timestamp = parser.isoparse(entry["time"])
-                if timestamp.hour != 12:
+                if timestamp.hour != 12 or timestamp.date() != today:
                     continue
 
                 dato = timestamp.date()
                 existing = HistoriskData.query.filter_by(
                     tettsted_id=t.id,
                     dato=dato
-                )
+                ).first()
                 if existing:
                     continue
 
@@ -229,7 +231,8 @@ def save_midday_weather():
                     firerisk=entry["ttf"]
                 )
                 db.session.add(record)
-            db.session.commit()
+        db.session.commit()
+        return "Recorded weather data", 204
 
 
 # Initialize the scheduler
@@ -341,7 +344,7 @@ def calculate_weather_data(lat, lon):
     ttf_text = str(ttf_customClass)
     ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"])
 
-    print(ttf_csv) #Denne er her for testing lol
+    print(ttf_csv)  # Denne er her for testing lol
 
     # Current time to flashover
     first_timestamp_pd = ttf_csv["timestamp"].iloc[1]
@@ -632,7 +635,7 @@ def history_dates():
 
 @app.route("/save_the_day")
 def save_the_day():
-    save_midday_weather()
+    return save_midday_weather()
 
 
 def new_kommune(kommune_navn, fylke):
