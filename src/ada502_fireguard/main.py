@@ -284,19 +284,28 @@ def calculate_weather_data(lat, lon):
     geo_res = requests.get(geo_url, headers=headers).json()
     addr = geo_res.get("address", {})
 
-    place = addr.get("suburb") or addr.get("village") or addr.get(
-        "town") or addr.get("city") or "Unknown place"
-    municipality = addr.get("municipality") or addr.get(
-        "city") or "Unknown municipality"
+    place = (
+        addr.get("suburb")
+        or addr.get("village")
+        or addr.get("town")
+        or addr.get("city")
+        or "Unknown place"
+    )
+    municipality = addr.get("municipality") or addr.get("city") or "Unknown municipality"
     county = addr.get("county")
 
     # ------------Hente data fra database med historiske værdata--------
-    # Sjekker ført om det valgte stedet har historiske væredata å gå utifra
+    # Sjekker først om det valgte stedet har historiske væredata å gå utifra
     place_weatherdata_past = Tettsted.query.filter_by(
-        latitude=lat, longitude=lon).first()
+        latitude=lat, longitude=lon
+    ).first()
     if place_weatherdata_past:
-        weatherdata_past = db.session.query(HistoriskData.temperatur, HistoriskData.luftfuktighet,
-                                            HistoriskData.vind, HistoriskData.dato).filter_by(tettsted_id=place_weatherdata_past.id).all()
+        weatherdata_past = db.session.query(
+            HistoriskData.temperatur,
+            HistoriskData.luftfuktighet,
+            HistoriskData.vind,
+            HistoriskData.dato,
+        ).filter_by(tettsted_id=place_weatherdata_past.id).all()
     else:
         weatherdata_past = []
 
@@ -305,7 +314,6 @@ def calculate_weather_data(lat, lon):
     current = all_data_future["properties"]["timeseries"][0]["data"]["instant"]["details"]
 
     # Data for fremtiden:
-    # Kun tidspunktene fra værdataen
     timeseries_future = all_data_future["properties"]["timeseries"]
     weather_points = []  # Tom liste som skal fylles med værdata
 
@@ -317,7 +325,7 @@ def calculate_weather_data(lat, lon):
                 temperature=temp,
                 humidity=hum,
                 wind_speed=wind,
-                timestamp=timestamp
+                timestamp=timestamp,
             )
         )
 
@@ -334,7 +342,7 @@ def calculate_weather_data(lat, lon):
                 temperature=temp,
                 humidity=hum,
                 wind_speed=wind,
-                timestamp=timestamp
+                timestamp=timestamp,
             )
         )
 
@@ -344,41 +352,74 @@ def calculate_weather_data(lat, lon):
     ttf_text = str(ttf_customClass)
     ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"])
 
+    # Kode for testing-----
     print(ttf_csv)  # Denne er her for testing lol
 
-    # Calculate how many historic data points were added
-    historic_count = len(weatherdata_past)
+    # Example for Windows; adjust the path for macOS/Linux
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+    output_path = os.path.join(desktop, "my_data_inspect.csv")
 
-    # Current time to flashover - use same logic as forecast
-    first_timestamp_pd = ttf_csv["timestamp"].iloc[historic_count + 1]
-    first_timestamp_string = first_timestamp_pd.strftime(
-        "%d. %B, %H:%M").lower()
-    first_ttf_float = float(ttf_csv["ttf"].iloc[historic_count + 1])
+    # or index=True if you want the index
+    ttf_csv.to_csv(output_path, index=False)
+    print("Saved to:", output_path)
+    # Kode for testing-----
+
+    # Sørg for at timestamp-kolonnen er sortert og (om nødvendig) har timezone
+    ttf_csv = ttf_csv.sort_values("timestamp")
+    if ttf_csv["timestamp"].dt.tz is None:
+        # antas å være UTC om de er naive
+        ttf_csv["timestamp"] = ttf_csv["timestamp"].dt.tz_localize(timezone.utc)
+
+    # Bygg et oppslag: timestamp -> ttf
+    ttf_map = {
+        row["timestamp"]: float(row["ttf"]) for _, row in ttf_csv.iterrows()
+    }
+
+    # Finn "nå"
+    now = datetime.now(timezone.utc)
+
+    # Current time to flashover – bruk første rad der tidspunktet er >= nå
+    future_rows = ttf_csv[ttf_csv["timestamp"] >= now]
+    if not future_rows.empty:
+        current_row = future_rows.iloc[0]
+    else:
+        # fallback: bruk siste tilgjengelige rad
+        current_row = ttf_csv.iloc[-1]
+
+    first_timestamp_pd = current_row["timestamp"]
+    first_timestamp_string = first_timestamp_pd.strftime("%d. %B, %H:%M").lower()
+    first_ttf_float = float(current_row["ttf"])
 
     # Future time to flashover
     forecast = []
 
-    # Only iterate through the timeseries_future entries
-    for i in range(1, len(timeseries_future)):
-        # Adjust index to account for historic data in ttf_csv
-        ttf_index = historic_count + i
+    # Gå gjennom alle MET‑punkter og match mot ttf_csv via timestamp
+    for entry in timeseries_future:
+        ts = parser.isoparse(entry["time"])
+        details = entry["data"]["instant"]["details"]
 
-        if ttf_index < len(ttf_csv):
-            ttf_value = float(ttf_csv["ttf"].iloc[ttf_index])
+        # Sørg for at ts er i samme timezone (UTC)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
 
-            entry = timeseries_future[i]["data"]["instant"]["details"]
-            # Use the timestamp directly from the API response
-            timestamp = parser.isoparse(timeseries_future[i]["time"])
+        # Prøv først eksakt match
+        ttf_value = ttf_map.get(ts)
 
-            forecast.append({
-                "time": timestamp.isoformat(),
-                "temperature": entry["air_temperature"],
-                "wind_speed": entry["wind_speed"],
-                "humidity": entry["relative_humidity"],
-                "ttf": round(ttf_value, 2)
-            })
+        if ttf_value is None:
+            # Fallback: finn nærmeste timestamp i ttf_csv
+            idx = (ttf_csv["timestamp"] - ts).abs().idxmin()
+            ttf_value = float(ttf_csv.loc[idx, "ttf"])
 
-    # ------------------------------------------------------
+        forecast.append(
+            {
+                "time": ts.isoformat(),
+                "temperature": details["air_temperature"],
+                "wind_speed": details["wind_speed"],
+                "humidity": details["relative_humidity"],
+                "ttf": round(ttf_value, 2),
+            }
+        )
+
     return {
         "place": place,
         "municipality": municipality,
@@ -388,7 +429,7 @@ def calculate_weather_data(lat, lon):
         "humidity": current["relative_humidity"],
         "timestamp": first_timestamp_string,
         "ttf_current": first_ttf_float,
-        "forecast": forecast
+        "forecast": forecast,
     }
 
 
