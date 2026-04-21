@@ -341,6 +341,8 @@ def calculate_weather_data(lat, lon):
     ttf_text = str(ttf_customClass)
     ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"])
 
+    print(ttf_csv) #Denne er her for testing lol
+
     # Current time to flashover
     first_timestamp_pd = ttf_csv["timestamp"].iloc[1]
     first_timestamp_string = first_timestamp_pd.strftime(
