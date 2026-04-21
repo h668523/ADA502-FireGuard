@@ -23,16 +23,17 @@ jobs:
           # Optional: skip host key checking
           echo -e "Host 158.39.75.130\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
-      # Step 3: Connect to NREC and update safely
+      # Step 3: Deploy with Docker Compose
       - name: Update and restart on NREC
         run: |
           ssh -i ~/.ssh/id_ed25519 ubuntu@158.39.75.130 -p 22 << 'EOF'
           cd ~/ADA502-FireGuard
+
+          # Get latest code
           git reset --hard
           git pull origin main
-          source .fire/bin/activate
-          # Kill old process if running
-          pkill -f main.py || true
-          # Start new process in background with nohup and logs
-          nohup python src/ada502_fireguard/main.py > ~/main.log 2>&1 &
+
+          # Restart with Docker
+          docker compose down || true
+          docker compose up -d --build
           EOF
