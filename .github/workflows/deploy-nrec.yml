@@ -20,7 +20,6 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.NREC_SSH_KEY_FOR_GITHUB_ACTIONS }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          # Optional: skip host key checking
           echo -e "Host 158.39.75.130\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
       # Step 3: Deploy with Docker Compose
@@ -33,7 +32,12 @@ jobs:
           git reset --hard
           git pull origin main
 
-          # Restart with Docker
+          # Stop running containers
           docker compose down || true
+
+          # Clean old Docker images, containers, and cache
+          docker system prune -af --volumes
+
+          # Rebuild and start fresh
           docker compose up -d --build
           EOF
