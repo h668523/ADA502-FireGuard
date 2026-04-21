@@ -170,33 +170,36 @@ def send_daily_notification():
         users_with_favorites = list(users_with_favorites.values())
         app.logger.info(users_with_favorites)
 
-    if not users_with_favorites:
-        print(f"[{datetime.now()}] No users to notify.")
-        return
+        if not users_with_favorites:
+            print(f"[{datetime.now()}] No users to notify.")
+            return
 
-    try:
-        # One SMTP connection for all emails
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        try:
+            # One SMTP connection for all emails
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(SENDER_EMAIL, SENDER_PASSWORD)
 
-            for user in users_with_favorites:
-                msg = build_email_for_user(user)
-                try:
-                    server.send_message(msg)
-                    print(
-                        f"[{datetime.now()}] Email sent to {user['email']}"
-                    )
-                except Exception as e_user:
-                    print(
-                        f"[{datetime.now()}] Failed to send email to "
-                        f"{user['email']}: {e_user}"
-                    )
+                for user in users_with_favorites:
+                    msg = build_email_for_user(user)
+                    try:
+                        server.send_message(msg)
+                        print(
+                            f"[{datetime.now()}] Email sent to {user['email']}"
+                        )
+                    except Exception as e_user:
+                        print(
+                            f"[{datetime.now()}] Failed to send email to "
+                            f"{user['email']}: {e_user}"
+                        )
 
-    except Exception as e:
-        print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
+        except Exception as e:
+            print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
+            import traceback
+            print(traceback.format_exc())
+            return jsonify({"success":False, "message":str(e)}), 500
 
 
 def save_midday_weather():
