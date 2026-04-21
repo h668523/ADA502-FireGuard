@@ -103,17 +103,18 @@ def debug_request():
 
 
 # ---------------Sende Emails--------------------
-emailrows = (db.session.query(Bruker.email, Tettsted.latitude, Tettsted.longitude).join(Favoritter, Bruker.id == Favoritter.bruker_id).join(Tettsted, Favoritter.tettsted_id == Tettsted.id).all())
+with app.app_context():
+    emailrows = (db.session.query(Bruker.email, Tettsted.latitude, Tettsted.longitude).join(Favoritter, Bruker.id == Favoritter.bruker_id).join(Tettsted, Favoritter.tettsted_id == Tettsted.id).all())
 
-users_with_favorites = {}
+    users_with_favorites = {}
 
-for email,lat,lon in emailrows:
-    users_with_favorites[email]["favorites"].append({
-        "lat": lat,
-        "lon": lon
-    })
-users_with_favorites = list(users_with_favorites.values())
-app.logger.info(users_with_favorites)
+    for email,lat,lon in emailrows:
+        users_with_favorites[email]["favorites"].append({
+            "lat": lat,
+            "lon": lon
+        })
+    users_with_favorites = list(users_with_favorites.values())
+    app.logger.info(users_with_favorites)
 
 # Configuration (loaded from environment variables)
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
