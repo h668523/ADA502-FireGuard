@@ -352,17 +352,6 @@ def calculate_weather_data(lat, lon):
     ttf_text = str(ttf_customClass)
     ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"])
 
-    # Kode for testing-----
-    print(ttf_csv)  # Denne er her for testing lol
-
-    # Example for Windows; adjust the path for macOS/Linux
-    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-    output_path = os.path.join(desktop, "my_data_inspect.csv")
-
-    # or index=True if you want the index
-    ttf_csv.to_csv(output_path, index=False)
-    print("Saved to:", output_path)
-    # Kode for testing-----
 
     # Sørg for at timestamp-kolonnen er sortert og (om nødvendig) har timezone
     ttf_csv = ttf_csv.sort_values("timestamp")
