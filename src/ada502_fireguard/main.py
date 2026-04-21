@@ -288,10 +288,12 @@ def calculate_weather_data(lat, lon):
     county = addr.get("county")
 
     # ------------Hente data fra database med historiske værdata--------
-    #Sjekker ført om det valgte stedet har historiske væredata å gå utifra
-    place_weatherdata_past = Tettsted.query.filter_by(latitude=lat, longitude=lon).first()
+    # Sjekker ført om det valgte stedet har historiske væredata å gå utifra
+    place_weatherdata_past = Tettsted.query.filter_by(
+        latitude=lat, longitude=lon).first()
     if place_weatherdata_past:
-        weatherdata_past = db.session.query(HistoriskData.temperatur, HistoriskData.luftfuktighet, HistoriskData.vind, HistoriskData.dato).filter_by(tettsted_id=place_weatherdata_past.id).all()
+        weatherdata_past = db.session.query(HistoriskData.temperatur, HistoriskData.luftfuktighet,
+                                            HistoriskData.vind, HistoriskData.dato).filter_by(tettsted_id=place_weatherdata_past.id).all()
     else:
         weatherdata_past = []
 
@@ -624,6 +626,11 @@ def history_dates():
     }
         for r in rows
     ])
+
+
+@app.route("/save_the_day")
+def save_the_day():
+    save_midday_weather()
 
 
 def new_kommune(kommune_navn, fylke):

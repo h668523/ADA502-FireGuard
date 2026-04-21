@@ -123,6 +123,7 @@
             <button id="submitPlace" onclick="submitNewPlace()">
                 Submit place
             </button> 
+            <button id="saveWeatherToday" onclick="saveNewDay()">Save the day!</button>
         </div>
         <script>
             let places = {{ places | tojson}};
@@ -139,6 +140,10 @@
                 } else {
                     addFavorite()
                 }
+            }
+
+            function saveNewDay() {
+                fetch(`/save_the_day`)
             }
 
             function addFavorite() {
