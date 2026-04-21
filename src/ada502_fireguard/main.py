@@ -673,7 +673,7 @@ def nytt_sted():
 @app.route("/history_dates")
 def history_dates():
     lat = request.args.get("lat")
-    long = request.args.get("long")
+    long = request.args.get("lon")
     app.logger.info(lat)
     app.logger.info(long)
 
