@@ -186,38 +186,40 @@ def send_daily_notification():
 
     except Exception as e:
         print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
+
 def save_midday_weather():
-    tettsteder = db.session.query(Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
+    with app.context():
+        tettsteder = db.session.query(Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
 
-    for t in tettsteder:
-        time.sleep(5)
-        data = calculate_weather_data(t.latitude, t.longitude)
-        if not data:
-            return
+        for t in tettsteder:
+            time.sleep(5)
+            data = calculate_weather_data(t.latitude, t.longitude)
+            if not data:
+                return
         
-        for entry in data["forecast"]:
-            timestamp = parser.isoparse(entry["time"])
-            if timestamp.hour != 12:
-                continue
+            for entry in data["forecast"]:
+                timestamp = parser.isoparse(entry["time"])
+                if timestamp.hour != 12:
+                    continue
             
-            dato = timestamp.date()
-            existing = HistoriskData.query.filter_by(
-                tettsted_id = t.id,
-                dato=dato
-            )
-            if existing:
-                continue
+                dato = timestamp.date()
+                existing = HistoriskData.query.filter_by(
+                    tettsted_id = t.id,
+                    dato=dato
+                )
+                if existing:
+                    continue
 
-            record = HistoriskData(
-                tettsted_id=t.id, 
-                dato=dato, 
-                temperatur=entry["temperature"], 
-                vind=entry["wind_speed"], 
-                luftfuktighet=entry["humidity"], 
-                firerisk=entry["ttf"]
-            )
-            db.session.add(record)
-        db.session.commit()
+                record = HistoriskData(
+                    tettsted_id=t.id, 
+                    dato=dato, 
+                    temperatur=entry["temperature"], 
+                    vind=entry["wind_speed"], 
+                    luftfuktighet=entry["humidity"], 
+                    firerisk=entry["ttf"]
+                )
+                db.session.add(record)
+            db.session.commit()
 
 
 # Initialize the scheduler
