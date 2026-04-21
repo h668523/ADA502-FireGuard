@@ -20,7 +20,7 @@ import time
 from datetime import date
 
 keycloak_openid = KeycloakOpenID(
-    server_url="http://keycloak:8080/",  # 158.39.75.130
+    server_url="http://keycloak:8080/",  
     client_id="fireguard-app",
     realm_name="fireguard",
     client_secret_key=None
@@ -30,6 +30,9 @@ keycloak_openid = KeycloakOpenID(
 load_dotenv()
 
 app = Flask(__name__)
+
+import logging
+app.logger.setLevel(logging.INFO)
 
 app.secret_key = "supersecretkey"
 
@@ -103,17 +106,6 @@ def debug_request():
 
 
 # ---------------Sende Emails--------------------
-# Example users used to create emails, will be changed later det er snart
-users_with_favorites = [
-    {
-        "email": "669866@stud.hvl.no",
-        "favorites": [{"lat": 60.36928328136428, "lon": 5.35059928894043}, {"lat": 60.36117711701432, "lon": 5.297470092773437}],
-    },
-    {
-        "email": "jonasedland@gmail.com",
-        "favorites": [{"lat": 60.36928328136428, "lon": 5.35059928894043}, {"lat": 60.36117711701432, "lon": 5.297470092773437}],
-    },
-]
 
 # Configuration (loaded from environment variables)
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -128,7 +120,12 @@ def get_weather_data_for_email(lat, lon):
     if data is None:
         return "Failed to fetch weather data"
     # Replace HTML <br> tags with newlines for plain text email
-    ttf_future_text = data['ttf_future'].replace('<br>', '\n')
+    ttf_future_text = data['forecast']
+    if isinstance(ttf_future_text, list):
+        ttf_future_text = "\n".join(map(str, ttf_future_text))
+    else:
+        ttf_future_text = str(ttf_future_text).replace('<br>','\n')
+
     return f"{data['place']}:\n{ttf_future_text}"
 
 
@@ -147,7 +144,9 @@ def build_email_for_user(user: dict) -> EmailMessage:
             body_parts.append(ttf_data)
         body = "Hello,\n\nHere are your fire risk forecasts for favorited locations:\n\n" + \
             "\n\n".join(body_parts) + "\n\nBest regards,\nFireGuard"
+        app.logger.info("Email contents: here are your favorites")
     else:
+        app.logger.info("Email contents: you have no favorite places")
         body = (
             "Hello,\n\n"
             "You currently have no favorited places.\n\n"
@@ -166,35 +165,60 @@ def build_email_for_user(user: dict) -> EmailMessage:
 
 def send_daily_notification():
     # Sender emailen
-    print(f"[{datetime.now()}] Running daily notification task...")
+    print(f"[{datetime.now()}] Running daily notification task...", flush=True)
+    with app.app_context():
 
-    if not users_with_favorites:
-        print(f"[{datetime.now()}] No users to notify.")
-        return
+        emailrows = (db.session.query(Bruker.email, Tettsted.latitude, Tettsted.longitude).outerjoin(Favoritter, Bruker.keycloak_id == Favoritter.bruker_id).outerjoin(Tettsted, Favoritter.tettsted_id == Tettsted.id).all())
 
-    try:
-        # One SMTP connection for all emails
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        users_with_favorites = {}
 
-            for user in users_with_favorites:
-                msg = build_email_for_user(user)
-                try:
-                    server.send_message(msg)
-                    print(
-                        f"[{datetime.now()}] Email sent to {user['email']}"
-                    )
-                except Exception as e_user:
-                    print(
-                        f"[{datetime.now()}] Failed to send email to "
-                        f"{user['email']}: {e_user}"
-                    )
+        for email,lat,lon in emailrows:
+            if email not in users_with_favorites:
+                users_with_favorites[email] = {
+                    "email": email,
+                    "favorites": []
+                }
+                
+            if lat is not None and lon is not None:
+                users_with_favorites[email]["favorites"].append({
+                    "lat": lat,
+                    "lon": lon
+                })
 
-    except Exception as e:
-        print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
+        users_with_favorites = list(users_with_favorites.values())
+
+        if not users_with_favorites:
+            app.logger.info("No users to notify")
+            print(f"[{datetime.now()}] No users to notify.")
+            return
+
+        try:
+            # One SMTP connection for all emails
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+                for user in users_with_favorites:
+                    msg = build_email_for_user(user)
+                    try:
+                        server.send_message(msg)
+                        app.logger.info("Email sent")
+                        print(
+                            f"[{datetime.now()}] Email sent to {user['email']}"
+                        )
+                    except Exception as e_user:
+                        app.logger.info("Failed to send email to a user")
+                        print(
+                            f"[{datetime.now()}] Failed to send email to "
+                            f"{user['email']}: {e_user}"
+                        )
+
+        except Exception as e:
+            print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
+            app.logger.info("SMTP connection failed")
+            return jsonify({"success":False, "message":str(e)}), 500
 
 
 def save_midday_weather():
