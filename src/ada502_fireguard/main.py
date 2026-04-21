@@ -188,7 +188,7 @@ def send_daily_notification():
         print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
 
 def save_midday_weather():
-    with app.context():
+    with app.app_context():
         tettsteder = db.session.query(Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
 
         for t in tettsteder:
