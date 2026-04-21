@@ -1,3 +1,10 @@
+from dotenv import load_dotenv
+import os   # Dette har med sikker lagring av passord til fireguard email
+from email.message import EmailMessage
+import smtplib
+from datetime import datetime
+import atexit
+from apscheduler.schedulers.background import BackgroundScheduler  # For å trigge emails
 import requests
 from flask import Flask, render_template, jsonify, request, url_for, session, redirect
 import folium
@@ -13,18 +20,11 @@ import time
 from datetime import date
 
 keycloak_openid = KeycloakOpenID(
-    server_url="http://keycloak:8080/", #158.39.75.130
+    server_url="http://keycloak:8080/",  # 158.39.75.130
     client_id="fireguard-app",
     realm_name="fireguard",
     client_secret_key=None
 )
-from apscheduler.schedulers.background import BackgroundScheduler  # For å trigge emails
-import atexit
-from datetime import datetime
-import smtplib
-from email.message import EmailMessage
-import os   # Dette har med sikker lagring av passord til fireguard email
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
@@ -45,11 +45,13 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+
 class Fylke(db.Model):
     __tablename__ = "fylke"
     name = db.Column(db.String(20), primary_key=True)
 
     kommuner = db.relationship("Kommune", backref="fylke")
+
 
 class Kommune(db.Model):
     __tablename__ = "kommune"
@@ -59,13 +61,15 @@ class Kommune(db.Model):
 
     tettsteder = db.relationship("Tettsted", backref="kommune")
 
+
 class Tettsted(db.Model):
     __tablename__ = "tettsted"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40))
-    kommune_id =db.Column(db.Integer, db.ForeignKey("kommune.id"))
+    kommune_id = db.Column(db.Integer, db.ForeignKey("kommune.id"))
     latitude = db.Column(db.Double)
     longitude = db.Column(db.Double)
+
 
 class Bruker(db.Model):
     __tablename__ = "bruker"
@@ -73,11 +77,13 @@ class Bruker(db.Model):
     brukernavn = db.Column(db.String(50))
     email = db.Column(db.String(75))
 
+
 class Favoritter(db.Model):
     __tablename__ = "favoritter"
     id = db.Column(db.Integer, primary_key=True)
     bruker_id = db.Column(db.String(100), db.ForeignKey("bruker.keycloak_id"))
     tettsted_id = db.Column(db.Integer, db.ForeignKey("tettsted.id"))
+
 
 class HistoriskData(db.Model):
     __tablename__ = "historiskdata"
@@ -89,11 +95,13 @@ class HistoriskData(db.Model):
     luftfuktighet = db.Column(db.Float)
     firerisk = db.Column(db.Float)
 
+
 @app.before_request
 def debug_request():
     print("HOST:", request.host)
     print("PATH:", request.path)
-    
+
+
 # ---------------Sende Emails--------------------
 # Example users used to create emails, will be changed later det er snart
 users_with_favorites = [
@@ -188,9 +196,11 @@ def send_daily_notification():
     except Exception as e:
         print(f"[{datetime.now()}] SMTP connection/login failed: {e}")
 
+
 def save_midday_weather():
     with app.app_context():
-        tettsteder = db.session.query(Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
+        tettsteder = db.session.query(
+            Tettsted.id, Tettsted.latitude, Tettsted.longitude).all()
         today = date.today()
 
         for t in tettsteder:
@@ -198,26 +208,26 @@ def save_midday_weather():
             data = calculate_weather_data(t.latitude, t.longitude)
             if not data:
                 continue
-            
+
             for entry in data["forecast"]:
                 timestamp = parser.isoparse(entry["time"])
                 if timestamp.hour != 12 or timestamp.date() != today:
                     continue
-            
+
                 dato = timestamp.date()
                 existing = HistoriskData.query.filter_by(
-                    tettsted_id = t.id,
+                    tettsted_id=t.id,
                     dato=dato
                 ).first()
                 if existing:
                     continue
 
                 record = HistoriskData(
-                    tettsted_id=t.id, 
-                    dato=dato, 
-                    temperatur=entry["temperature"], 
-                    vind=entry["wind_speed"], 
-                    luftfuktighet=entry["humidity"], 
+                    tettsted_id=t.id,
+                    dato=dato,
+                    temperatur=entry["temperature"],
+                    vind=entry["wind_speed"],
+                    luftfuktighet=entry["humidity"],
                     firerisk=entry["ttf"]
                 )
                 db.session.add(record)
@@ -254,10 +264,13 @@ atexit.register(lambda: scheduler.shutdown())
 
 def calculate_weather_data(lat, lon):
     # Denne brukes både når email skal lages og når kartet klikkes på
+
+    # --------------Hente data fra MET om fremtidig vær-----------
     url = f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={lat}&lon={lon}"
 
     headers = {
-        "User-Agent": "FireGuard/1.0 668523@stud.hvl.no" #I fremtiden, ta imot emailen til en bruker og bruk den istedenfor
+        # I fremtiden, ta imot emailen til en bruker og bruk den istedenfor
+        "User-Agent": "FireGuard/1.0 668523@stud.hvl.no"
     }
 
     response = requests.get(url, headers=headers)
@@ -265,7 +278,7 @@ def calculate_weather_data(lat, lon):
     if response.status_code != 200:
         return None
 
-    all_data = response.json()
+    all_data_future = response.json()
 
     geo_url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
     geo_res = requests.get(geo_url, headers=headers).json()
@@ -277,16 +290,38 @@ def calculate_weather_data(lat, lon):
         "city") or "Unknown municipality"
     county = addr.get("county")
 
-    # --------------Fire risk-kalkulering--------------------
-    #For å returnere værdata for i dag
-    current = all_data["properties"]["timeseries"][0]["data"]["instant"]["details"]
+    # ------------Hente data fra database med historiske værdata--------
+    # Sjekker ført om det valgte stedet har historiske væredata å gå utifra
+    place_weatherdata_past = Tettsted.query.filter_by(
+        latitude=lat, longitude=lon).first()
+    if place_weatherdata_past:
+        weatherdata_past = db.session.query(HistoriskData.temperatur, HistoriskData.luftfuktighet,
+                                            HistoriskData.vind, HistoriskData.dato).filter_by(tettsted_id=place_weatherdata_past.id).all()
+    else:
+        weatherdata_past = []
 
     # --------------Fire risk-kalkulering--------------------
-    timeseries = all_data["properties"]["timeseries"]
+    # Kun data for i dag (hører til gammel kode, brukes bare én gang og burde egentlig oppdateres):
+    current = all_data_future["properties"]["timeseries"][0]["data"]["instant"]["details"]
 
-    weather_points = []
+    # Data for fremtiden:
+    # Kun tidspunktene fra værdataen
+    timeseries_future = all_data_future["properties"]["timeseries"]
+    weather_points = []  # Tom liste som skal fylles med værdata
 
-    for entry in timeseries:
+    # Lagrer både fortidig og fremtidig værdata i listen
+    for temp, hum, wind, dato in weatherdata_past:
+        timestamp = datetime.combine(dato, datetime.time(12, 0))
+        weather_points.append(
+            frcm.WeatherDataPoint(
+                temperature=temp,
+                humidity=hum,
+                wind_speed=wind,
+                timestamp=timestamp
+            )
+        )
+
+    for entry in timeseries_future:
         timestamp = parser.isoparse(entry["time"])
         details = entry["data"]["instant"]["details"]
 
@@ -309,21 +344,24 @@ def calculate_weather_data(lat, lon):
     ttf_text = str(ttf_customClass)
     ttf_csv = pd.read_csv(io.StringIO(ttf_text), parse_dates=["timestamp"])
 
+    print(ttf_csv)  # Denne er her for testing lol
+
     # Current time to flashover
     first_timestamp_pd = ttf_csv["timestamp"].iloc[1]
-    first_timestamp_string = first_timestamp_pd.strftime("%d. %B, %H:%M").lower()
+    first_timestamp_string = first_timestamp_pd.strftime(
+        "%d. %B, %H:%M").lower()
     first_ttf_float = float(ttf_csv["ttf"].iloc[1])
 
     # Future time to flashover
     forecast = []
 
-    limit = min(len(ttf_csv), len(timeseries))
+    limit = min(len(ttf_csv), len(timeseries_future))
 
     for i in range(1, limit):
         timestamp = ttf_csv["timestamp"].iloc[i]
         ttf_value = float(ttf_csv["ttf"].iloc[i])
 
-        entry = timeseries[i]["data"]["instant"]["details"]
+        entry = timeseries_future[i]["data"]["instant"]["details"]
 
         forecast.append({
             "time": timestamp.isoformat(),
@@ -377,10 +415,11 @@ def get_weather():
 def index():
     return render_template('index.html')
 
+
 @app.route("/login")
 def login():
     auth_url = keycloak_openid.auth_url(
-        redirect_uri="http://158.39.75.130:8000/callback", #158.39.75.130
+        redirect_uri="http://158.39.75.130:8000/callback",  # 158.39.75.130
         scope="openid"
     )
     return redirect(auth_url)
@@ -396,7 +435,7 @@ def callback():
     token = keycloak_openid.token(
         grant_type="authorization_code",
         code=code,
-        redirect_uri="http://158.39.75.130:8000/callback" #158.39.75.130
+        redirect_uri="http://158.39.75.130:8000/callback"  # 158.39.75.130
     )
     print("TOKEN RESPONSE: ", token)
 
@@ -415,6 +454,7 @@ def callback():
 
     return redirect("/mainpage")
 
+
 @app.route('/set-guest', methods=['POST'])
 def set_guest():
     session['user'] = {"preferred_username": "Guest"}
@@ -426,15 +466,16 @@ def mainpage():
     user = session["user"]
     if not user:
         return redirect("/login")
-    steder = db.session.query(Tettsted.name, Kommune.name.label("kommune"), Tettsted.latitude, Tettsted.longitude).join(Kommune).order_by(Tettsted.name.asc()).all()
+    steder = db.session.query(Tettsted.name, Kommune.name.label(
+        "kommune"), Tettsted.latitude, Tettsted.longitude).join(Kommune).order_by(Tettsted.name.asc()).all()
     places = [{
         "name": s.name,
         "kommune": s.kommune,
         "lat": s.latitude,
         "long": s.longitude
     }
-    for s in steder]
-    
+        for s in steder]
+
     user_id = user.get("sub")
     if user_id:
         favorites = db.session.query(Tettsted).join(
@@ -443,14 +484,16 @@ def mainpage():
             Favoritter.bruker_id == user_id
         ).all()
     else:
-        favorites=[]
+        favorites = []
 
     return render_template('mainpage.html', places=places, favorites=favorites, username=user["preferred_username"])
+
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
+
 
 @app.route('/trigger-daily-task', methods=['POST'])
 def trigger_daily_task():
@@ -465,6 +508,8 @@ def trigger_daily_task():
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Database greier
+
+
 @app.route("/favorite", methods=["POST"])
 def add_favorite():
     data = request.get_json()
@@ -484,23 +529,28 @@ def add_favorite():
     fylket = Fylke.query.filter_by(name=fylke).first()
     if not fylket:
         return "ingen fylke med navn " + fylke, 404
-    kommunen = Kommune.query.filter_by(name = kommune, fylke_name=fylket.name).first()
+    kommunen = Kommune.query.filter_by(
+        name=kommune, fylke_name=fylket.name).first()
     if not kommunen:
         new_kommune(kommune, fylke)
-    kommunen = Kommune.query.filter_by(name = kommune, fylke_name=fylket.name).first()
-    tettstedet = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
+    kommunen = Kommune.query.filter_by(
+        name=kommune, fylke_name=fylket.name).first()
+    tettstedet = Tettsted.query.filter_by(
+        name=tettsted, kommune_id=kommunen.id).first()
     if not tettstedet:
         new_tettsted(tettsted, kommunen.id, data.get("lat"), data.get("long"))
-    tettstedet = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
+    tettstedet = Tettsted.query.filter_by(
+        name=tettsted, kommune_id=kommunen.id).first()
 
-    fav = Favoritter (
-        bruker_id = user_id,
-        tettsted_id = tettstedet.id
+    fav = Favoritter(
+        bruker_id=user_id,
+        tettsted_id=tettstedet.id
     )
 
     db.session.add(fav)
     db.session.commit()
     return "", 204
+
 
 @app.route("/unfavorite", methods=["POST"])
 def unfavorite():
@@ -513,16 +563,20 @@ def unfavorite():
     if not user_id:
         return "Invalid session, no sub", 401
     fylket = Fylke.query.filter_by(name=fylke).first()
-    kommunen = Kommune.query.filter_by(name = kommune, fylke_name=fylket.name).first()
-    tettstedet = Tettsted.query.filter_by(name = tettsted, kommune_id=kommunen.id).first()
+    kommunen = Kommune.query.filter_by(
+        name=kommune, fylke_name=fylket.name).first()
+    tettstedet = Tettsted.query.filter_by(
+        name=tettsted, kommune_id=kommunen.id).first()
 
-    favoritten = Favoritter.query.filter_by(bruker_id=user_id, tettsted_id=tettstedet.id).first()
+    favoritten = Favoritter.query.filter_by(
+        bruker_id=user_id, tettsted_id=tettstedet.id).first()
     if not favoritten:
         return "Stedet er ikke favorittet", 400
     db.session.delete(favoritten)
     db.session.commit()
 
     return "", 204
+
 
 @app.route("/nytt-sted", methods=["POST"])
 def nytt_sted():
@@ -536,20 +590,24 @@ def nytt_sted():
 
     if not all([tettsted_name, kommune_name, fylke_name, lat, long]):
         return "Missing data", 400
-    
+
     fylket = Fylke.query.filter_by(name=fylke_name).first()
     if not fylket:
         return "ingen fylke med navn " + fylke_name, 404
-    
-    kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
+
+    kommunen = Kommune.query.filter_by(
+        name=kommune_name, fylke_name=fylket.name).first()
     if not kommunen:
         new_kommune(kommune_name, fylke_name)
-        kommunen = Kommune.query.filter_by(name = kommune_name, fylke_name=fylket.name).first()
+        kommunen = Kommune.query.filter_by(
+            name=kommune_name, fylke_name=fylket.name).first()
 
-    tettstedet = Tettsted.query.filter_by(name = tettsted_name, kommune_id=kommunen.id).first()
+    tettstedet = Tettsted.query.filter_by(
+        name=tettsted_name, kommune_id=kommunen.id).first()
     if not tettstedet:
         new_tettsted(tettsted_name, kommunen.id, lat, long)
-    return jsonify({"status":"ok"})
+    return jsonify({"status": "ok"})
+
 
 @app.route("/history_dates")
 def history_dates():
@@ -560,38 +618,42 @@ def history_dates():
 
     if not tettsted:
         return jsonify([])
-    
-    rows = HistoriskData.query.filter_by(tettsted_id=tettsted.id).order_by(HistoriskData.dato.desc()).all()
+
+    rows = HistoriskData.query.filter_by(
+        tettsted_id=tettsted.id).order_by(HistoriskData.dato.desc()).all()
 
     return jsonify([{
-            "date": r.dato.isoformat(),
-            "temp": r.temperatur,
-            "wind": r.vind,
-            "humidity": r.luftfuktighet,
-            "firerisk": r.firerisk
-        }
+        "date": r.dato.isoformat(),
+        "temp": r.temperatur,
+        "wind": r.vind,
+        "humidity": r.luftfuktighet,
+        "firerisk": r.firerisk
+    }
         for r in rows
     ])
+
 
 @app.route("/save_the_day")
 def save_the_day():
     return save_midday_weather()
 
+
 def new_kommune(kommune_navn, fylke):
     kommun = Kommune(
         name=kommune_navn,
-        fylke_name = fylke
+        fylke_name=fylke
     )
     db.session.add(kommun)
     db.session.commit()
     return
 
+
 def new_tettsted(tettsted_navn, kommune_id, lat, long):
     tettsted = Tettsted(
         name=tettsted_navn,
-        kommune_id = kommune_id,
-        latitude = lat,
-        longitude = long
+        kommune_id=kommune_id,
+        latitude=lat,
+        longitude=long
     )
     db.session.add(tettsted)
     db.session.commit()
@@ -600,4 +662,3 @@ def new_tettsted(tettsted_navn, kommune_id, lat, long):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=False)
-
