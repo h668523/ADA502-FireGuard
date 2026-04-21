@@ -20,7 +20,7 @@ import time
 from datetime import date
 
 keycloak_openid = KeycloakOpenID(
-    server_url="http://keycloak:8080/",  # 158.39.75.130
+    server_url="http://keycloak:8080/",  
     client_id="fireguard-app",
     realm_name="fireguard",
     client_secret_key=None
@@ -30,6 +30,9 @@ keycloak_openid = KeycloakOpenID(
 load_dotenv()
 
 app = Flask(__name__)
+
+import logging
+app.logger.setLevel(logging.INFO)
 
 app.secret_key = "supersecretkey"
 
@@ -155,7 +158,7 @@ def build_email_for_user(user: dict) -> EmailMessage:
 
 def send_daily_notification():
     # Sender emailen
-    print(f"[{datetime.now()}] Running daily notification task...")
+    print(f"[{datetime.now()}] Running daily notification task...", flush=True)
     with app.app_context():
 
         emailrows = (db.session.query(Bruker.email, Tettsted.latitude, Tettsted.longitude).join(Favoritter, Bruker.keycloak_id == Favoritter.bruker_id).join(Tettsted, Favoritter.tettsted_id == Tettsted.id).all())
