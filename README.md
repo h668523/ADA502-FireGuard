@@ -24,3 +24,10 @@ Dette vil starte applikasjonen lokalt via Docker Compose.
 For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukernavn og passord i mappen. Denne skal av sikkerhetsgrunner ikke ligge på github, så ta kontakt med Jonas Edland om det skulle bli relevant å legge til filen.
 
 Prosjektet baserer seg på api.met.no for å få inn værdata, AWS sin database for å lagre data, og Flask, et web-app framework for python. 
+
+Svakheter ved prosjektet:
+Veldig lite struktur, alt av funksjoner ligger i main.py (det ble gjort pga latskap)
+Dersom man favoriserer et sted må man oppdatere siden for å få den opp i favoritter listen (fikk aldri det til å oppdatere skikkelig)
+Fikk ikke til HTTPS
+Ingen tester (pga latskap og det er et ganske grunneleggende program)
+Dersom man velger et sted og ser på fremtidig data, dermed velger et nytt sted, så henger den gamle dataen igjen. 
