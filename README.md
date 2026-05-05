@@ -26,7 +26,7 @@ For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukerna
 Prosjektet baserer seg på api.met.no for å få inn værdata, AWS sin database for å lagre data, og Flask, et web-app framework for python. 
 
 Svakheter ved prosjektet:
-Veldig lite struktur, alt av funksjoner ligger i main.py (det ble gjort pga latskap)
+Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap)
 Ingen tester (pga latskap og det er et ganske grunneleggende program)
 Fikk ikke til HTTPS
 Ingen encryption mellom endpoints
