@@ -68,15 +68,20 @@ CD pipeline håndteres ved hjelp av Docker og Docker Compose sammen med GitHub a
    
 Dette vil starte applikasjonen lokalt via Docker Compose.
 
-Ønsker du å kjøre applikasjonen på en server med egen IP, må du endre alle steder det står en IP-addresse. I main.py må du endre linje 483 og 499. I docker_compose.yml må du endre linje 25. Og i keycloak_exports ligger fireguard-realm.json. På linje 518 og 519 må du endre IP. Ellers må du også åpne port 8000 og 5000 på serveren for at applikasjonen skal fungere.
+Ønsker du å kjøre applikasjonen på en server med egen IP, må du endre alle steder det står en IP-addresse. 
+- I main.py må du endre linje 483 og 499.
+- I docker_compose.yml må du endre linje 25.
+- I keycloak_exports ligger fireguard-realm.json. På linje 518 og 519 må du endre IP.
+Ellers må du også åpne port 8000 og 5000 på serveren for at applikasjonen skal fungere.
 
 For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukernavn og passord i mappen. Denne skal av sikkerhetsgrunner ikke ligge på github, så ta kontakt med Jonas Edland om det skulle bli relevant å legge til filen.
 
+**
 *Prosjektet baserer seg på api.met.no for å få inn værdata, AWS sin database for å lagre data, og Flask, et web-app framework for python.*
 *Eg foreslår å fjerne denne etterkvert, ettersom vi har arkitektur seksjonen, eg vill berre ikkje fjerne noko enda*
 
 ## Svakheter ved prosjektet:
-- Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap) *Eg foreslår å fjerne grunnen her, men kanskje ha med kvifor det er svakhet, men kanskje ikkje*
+- Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap) *Eg foreslår å fjerne grunnen her*
 - Ingen tester (pga latskap og det er et ganske grunneleggende program)
 - Fikk ikke til HTTPS
 - Ingen encryption mellom endpoints
@@ -89,7 +94,7 @@ For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukerna
 - Begrenset struktur (store deler av logikk ligger i main.py og frontend)
 - Ingen automatiske tester implementert
 - HTTPS er ikke satt opp
-- Ingen full kryptering mellom alle endpoints
+- Alle endpoints eksponeres over HTTP uten HTTPS/TLS-kryptering
 - UI oppdateres ikke alltid dynamisk etter endringer, f.eks. favoritter(man må refreshe browser)
 - Enkelte UI-elementer kan henge igjen ved navigasjon mellom steder(man må trykke på grønn dato knapp)
 - Brukere blir ikke eksplisitt informert om e-postabonnement ved registrering
