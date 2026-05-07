@@ -76,9 +76,9 @@ For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukerna
 *Eg foreslår å fjerne denne etterkvert, ettersom vi har arkitektur seksjonen, eg vill berre ikkje fjerne noko enda*
 
 Svakheter ved prosjektet:
-Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap) *Eg foreslår å fjerne grunnen her, men kanskje ha med kvifor det er svakhet, men kanskje ikkje*
-Ingen tester (pga latskap og det er et ganske grunneleggende program)
-Fikk ikke til HTTPS
-Ingen encryption mellom endpoints
-Dersom man favoriserer et sted må man oppdatere siden for å få den opp i favoritter listen (fikk aldri det til å oppdatere skikkelig)
-Dersom man velger et sted og ser på fremtidig data, dermed velger et nytt sted, så henger den gamle dataen igjen. 
+- Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap) *Eg foreslår å fjerne grunnen her, men kanskje ha med kvifor det er svakhet, men kanskje ikkje*
+- Ingen tester (pga latskap og det er et ganske grunneleggende program)
+- Fikk ikke til HTTPS
+- Ingen encryption mellom endpoints
+- Dersom man favoriserer et sted må man oppdatere siden for å få den opp i favoritter listen (fikk aldri det til å oppdatere skikkelig)
+- Dersom man velger et sted og ser på fremtidig data, dermed velger et nytt sted, så henger den gamle dataen igjen. 
