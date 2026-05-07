@@ -16,8 +16,8 @@ Frontend-en består av HTML-sider generert på serveren, kombinert med JavaScrip
 Autentisering håndteres eksternt gjennom Keycloak via OpenID Connect. Historisk værdata og historisk ttf(time to flashover) lagres i PostgreSQL hostet på AWS RDS.
 
 Applikasjonen tas også i bruk flere eksterne tjenester(services), blant annet:
-- MET.no sitt vær-API
-- OpenStreetMap Nominatim
+- MET.no sitt vær-API for værvarsel
+- OpenStreetMap Nominatim for reverse geocoding (konvertering av koordinater til stednavn)
 - Gmail SMTP for e-postvarsler
 
 CD pipeline håndteres ved hjelp av Docker og Docker Compose sammen med GitHub actions.
