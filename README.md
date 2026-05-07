@@ -23,7 +23,7 @@ Gmail SMTP for e-postvarsler
 
 CD pipeline håndteres ved hjelp av Docker og Docker Compose sammen med GitHub actions.
 
-
+'''
 ┌─────────────────────────────┐
 │         Web Browser         │
 │ HTML + JavaScript + Leaflet │
@@ -56,7 +56,7 @@ CD pipeline håndteres ved hjelp av Docker og Docker Compose sammen med GitHub a
 │ - OpenStreetMap Nominatim   │
 │ - Gmail SMTP                │
 └─────────────────────────────┘
-
+'''
 
 Slik kjører du prosjektet lokalt:
 
