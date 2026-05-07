@@ -1,4 +1,4 @@
-##Velkommen til vårt FireGuard prosjekt!
+## Velkommen til vårt FireGuard prosjekt!
 Url nettside: http://158.39.75.130:8000/
 
 For å lage en bruker, klikk på "log in with keycloak" og "register" der. Navn og email trenger ikkje være nøyaktige.
@@ -8,7 +8,7 @@ Du kan søke etter steder, eller:
 
 Steder som ikke er søkbare, og som ikke er submitted vil ikke ha nøyaktig time to flashover, ettersom de ikke har historisk værdata i databasen. Dersom du har favorisert et nytt sted vil applikasjonen automatisk samle historisk værdata
 
-##Generell "big picture" arkitektur
+## Generell "big picture" arkitektur
 Vår FireGuard applikasjon er en containerbasert webapplikasjon bygget med Flask. Systemet følger hovedsakelig en monolittisk arkitektur hvor Flask-applikasjonen håndterer routing, business logic, databasekommunikasjon, værhenting, brannrisikoberegninger og planlagte bakgrunnsoppgaver.
 
 Frontend-en består av server-renderte HTML-maler kombinert med JavaScript og Leaflet for interaktiv kartfunksjonalitet.
@@ -58,7 +58,7 @@ CD pipeline håndteres ved hjelp av Docker og Docker Compose sammen med GitHub a
 └─────────────────────────────┘
 ```
 
-##Slik kjører du prosjektet lokalt:
+## Slik kjører du prosjektet lokalt:
 
 1. Klon repositoriet
 2. Sørg for at Docker er installert
@@ -75,7 +75,7 @@ For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukerna
 *Prosjektet baserer seg på api.met.no for å få inn værdata, AWS sin database for å lagre data, og Flask, et web-app framework for python.*
 *Eg foreslår å fjerne denne etterkvert, ettersom vi har arkitektur seksjonen, eg vill berre ikkje fjerne noko enda*
 
-##Svakheter ved prosjektet:
+## Svakheter ved prosjektet:
 - Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap) *Eg foreslår å fjerne grunnen her, men kanskje ha med kvifor det er svakhet, men kanskje ikkje*
 - Ingen tester (pga latskap og det er et ganske grunneleggende program)
 - Fikk ikke til HTTPS
@@ -85,7 +85,7 @@ For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukerna
 - Ingen advarsel at man vil få daglige e-poster ved å registrere bruker og legge til favoritter.
 
 *****FORSLAG TIL SVAKHETER SEKSJON***
-##Kjente begrensninger:
+## Kjente begrensninger:
 - Begrenset struktur (store deler av logikk ligger i main.py og frontend)
 - Ingen automatiske tester implementert
 - HTTPS er ikke satt opp
