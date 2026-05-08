@@ -27,34 +27,28 @@ CD pipeline håndteres ved hjelp av Docker og Docker Compose sammen med GitHub a
 │         Web Browser         │
 │ HTML + JavaScript + Leaflet │
 └──────────────┬──────────────┘
-               │ HTTP
+               │ HTTP GET/POST
                ▼
 ┌─────────────────────────────┐
-│       Flask Application     │
-│          FireGuard          │
+│     Docker Container        │
+│     Flask Application       │
+│         FireGuard           │
 │                             │
 │ - Routing                   │
 │ - Business Logic            │
-│ - Fire Risk Calculation     │
 │ - Weather Handling          │
-│ - Favorites                 │
+│ - Fire Risk Calculation     │
 │ - Background Tasks          │
-└───────┬───────────┬─────────┘
-        │           │
-        │           │
-        ▼           ▼
-┌──────────────┐  ┌──────────────┐
-│ PostgreSQL   │  │   Keycloak   │
-│ AWS RDS      │  │ Authentication│
-└──────────────┘  └──────────────┘
-        │
-        ▼
-┌─────────────────────────────┐
-│     External Services       │
-│ - MET.no Weather API        │
-│ - OpenStreetMap Nominatim   │
-│ - Gmail SMTP                │
-└─────────────────────────────┘
+│ - REST-like API Endpoints   │
+└───────┬───────────┬──────────────────────────────┐
+        │           │                              │
+        ▼           ▼                              ▼
+┌──────────────┐  ┌────────────────┐  ┌─────────────────────────────┐
+│ PostgreSQL   │  │ Docker Container│ │      External Services      │
+│ AWS RDS      │  │   Keycloak      │ │ - MET.no Weather API        │
+│ Database     │  │ Authentication  │ │ - OpenStreetMap Nominatim   │
+└──────────────┘  └────────────────┘  │ - Gmail SMTP                │
+                                      └─────────────────────────────┘
 ```
 
 ## Slik kjører du prosjektet lokalt:
@@ -76,24 +70,7 @@ Ellers må du også åpne port 8000 og 5000 på serveren for at applikasjonen sk
 
 For at epostfunksjonaliteten skal virke, må det ligges en .env-fil med brukernavn og passord i mappen. Denne skal av sikkerhetsgrunner ikke ligge på github, så ta kontakt med Jonas Edland om det skulle bli relevant å legge til filen.
 
-```
-*Eg foreslår å fjerne denne delen etterkvert, ettersom vi har arkitektur seksjonen, eg vill berre ikkje fjerne noko enda*
 
-Prosjektet baserer seg på api.met.no for å få inn værdata, AWS sin database for å lagre data, og Flask, et web-app framework for python.
-
-
-## Svakheter ved prosjektet:
-- Veldig lite struktur, alt av funksjoner ligger enten i main.py eller mainpage.html (det ble gjort pga latskap) *Eg foreslår å fjerne grunnen her*
-- Ingen tester (pga latskap og det er et ganske grunneleggende program)
-- Fikk ikke til HTTPS
-- Ingen encryption mellom endpoints
-- Dersom man favoriserer et sted må man oppdatere siden for å få den opp i favoritter listen (fikk aldri det til å oppdatere skikkelig)
-- Dersom man velger et sted og ser på fremtidig data, dermed velger et nytt sted, så henger den gamle dataen igjen.
-- Ingen advarsel at man vil få daglige e-poster ved å registrere bruker og legge til favoritter.
-
-
-Forslag til svakheter seksjon under:
-```
 ## Kjente begrensninger:
 - Begrenset struktur (store deler av logikk ligger i main.py og frontend)
 - Ingen automatiske tester implementert
